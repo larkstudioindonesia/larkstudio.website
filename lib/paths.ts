@@ -7,7 +7,7 @@ import { DEFAULT_LOCALE } from '@/content/types';
  * Any change is a broken link in someone's archive.
  */
 
-export const SITE_ORIGIN = 'https://larkstudio.co.id';
+export const SITE_ORIGIN = 'https://larkstudio.id';
 
 export const paths = {
   home: (locale: Locale) => `/${locale}`,
