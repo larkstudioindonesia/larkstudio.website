@@ -1,0 +1,18 @@
+
+> lark-studio@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.1.6
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.100.10:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.1s
+ ✓ Compiled /middleware in 194ms (99 modules)
+ ○ Compiling /[lang] ...
+ ✓ Compiled /[lang] in 2.7s (1479 modules)
+ GET /en 200 in 1021ms
+ GET /en 200 in 64ms
+ GET /en 200 in 200ms
+ ✓ Compiled in 384ms (707 modules)
+[?25h

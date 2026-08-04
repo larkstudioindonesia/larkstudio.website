@@ -1,0 +1,415 @@
+@import 'tailwindcss';
+
+@source '../app';
+@source '../components';
+@source '../content';
+
+/* ==================================================================
+   LARK STUDIO — DESIGN TOKENS
+
+   Tailwind v4, CSS-first. There is no tailwind.config.ts: this file
+   is the single source of truth for every design decision, which is
+   the correct arrangement for a site meant to survive ten years.
+   Someone opening this repository in 2036 reads one file to
+   understand the whole system.
+
+   Tailwind's defaults are RESET, not extended. Radius 0, no shadows,
+   and a closed colour and spacing scale are design decisions —
+   leaving the defaults installed would make them optional.
+   ================================================================== */
+
+@theme {
+  /* ---------------------------------------------------------------
+     RESET
+     --------------------------------------------------------------- */
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --font-weight-*: initial;
+  --tracking-*: initial;
+  --leading-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --blur-*: initial;
+  --breakpoint-*: initial;
+  --container-*: initial;
+  --ease-*: initial;
+  --animate-*: initial;
+  --spacing: initial;
+
+  /* ---------------------------------------------------------------
+     COLOUR
+
+     Neither end is absolute. Paper is not #000 — it sits at #1A1A1A,
+     flatter than a photographic black, so it never crushes shadow
+     detail in the photography it surrounds. Ink is not #FFF — it
+     sits at #F5F5F5, so it never glares against paper at full-screen
+     scale. The palette is neutral, not warm-cast: a dark surround
+     needs to stay quiet behind saturated interior photography rather
+     than add its own colour cast.
+
+     There is no brand accent. At Image Dominance 8 the photographs
+     supply every chromatic event on the site.
+     --------------------------------------------------------------- */
+  --color-paper: #1a1a1a;
+  --color-sunk: #202020;
+  --color-card: #262626; /* the one new surface: flat tonal shift only — no border, radius or shadow */
+  --color-ink: #f5f5f5;
+  --color-ink-2: #a6a6a6;
+  --color-ink-3: #858585;
+  --color-hairline: rgba(255, 255, 255, 0.08);
+  --color-structural: rgba(255, 255, 255, 0.36);
+  --color-emphasis: #f5f5f5;
+  --color-signal: #e9585d; /* errors only, never decorative */
+
+  /* Inverse surface. Reserved for ONE context — the site-wide footer.
+     If it appears in three places it becomes a decorative device and
+     the system loses its single-surface discipline.
+     Contrast on --color-ink: paper 15.96:1, ink-3-inverse 4.68:1. */
+  --color-inverse: #f5f5f5;
+  --color-ink-inverse: #1a1a1a;
+  --color-ink-3-inverse: #6e6e6e;
+  --color-hairline-inverse: rgba(0, 0, 0, 0.08);
+
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* ---------------------------------------------------------------
+     SPACE
+
+     Atomic unit 4px, functional step 8px. Vertical rhythm anchors to
+     the 30px body leading.
+
+     The dynamic scale is disabled above, so `p-13` does not exist.
+     The large values are a specification, not a preference: the
+     quiet compression of generous spacing during build is how
+     restrained designs turn ordinary between design and launch.
+     --------------------------------------------------------------- */
+  /* Zero needs its own entry: resetting the base `--spacing` variable
+     (above) removes Tailwind's built-in zero special-case along with
+     the dynamic scale, so `top-0`/`inset-0`/`inset-x-0`/`left-0`/
+     `right-0` etc. silently fail to generate without this. Every use
+     of those utilities sitewide (RevealImage, HeroMedia, the mobile
+     menu panel, Header) depends on it. */
+  --spacing-0: 0px;
+  --spacing-1: 0.25rem;   /*   4 — optical adjustment      */
+  --spacing-2: 0.5rem;    /*   8 — caption to image        */
+  --spacing-3: 0.75rem;   /*  12 — within specification    */
+  --spacing-4: 1rem;      /*  16 — paragraph separation    */
+  --spacing-5: 1.5rem;    /*  24 — element grouping        */
+  --spacing-6: 2rem;      /*  32 — sub-block separation    */
+  --spacing-7: 3rem;      /*  48 — block separation        */
+  --spacing-8: 4rem;      /*  64 — minor section           */
+  --spacing-9: 6rem;      /*  96 — section, mobile         */
+  --spacing-10: 8rem;     /* 128 — section                 */
+  --spacing-11: 10rem;    /* 160 — major section, desktop  */
+  --spacing-12: 12.5rem;  /* 200 — chapter break           */
+
+  /* ---------------------------------------------------------------
+     BREAKPOINTS
+     Set by measure, not by device. Each is the point at which the
+     reading column stops working.
+     --------------------------------------------------------------- */
+  --breakpoint-tablet: 600px;
+  --breakpoint-desktop: 1024px;
+  --breakpoint-wide: 1440px;
+
+  /* Structural content caps here; images are exempt and run to the
+     viewport. The tension between a viewport-wide image and a narrow
+     disciplined text column is the entire editorial effect. */
+  --container-structure: 1800px;
+
+  /* ---------------------------------------------------------------
+     TYPE
+
+     All-sans, minimalist. `--font-serif` carries Montserrat (heading,
+     display, hero) and `--font-grotesque` carries Manrope (body, UI,
+     caption, fact) — the variable names predate this pass and are left
+     alone so no component's `font-serif`/`font-grotesque` class needs
+     to change; only the typeface behind each name did.
+
+     The infrastructure scale below is unchanged and stays modest —
+     nothing above 40px. `--text-display`/`--text-hero` are a second,
+     larger tier added for the cinematic register: hero headline and a
+     handful of large section moments only.
+     --------------------------------------------------------------- */
+  --font-serif: var(--font-serif-family), 'Helvetica Neue', Arial, sans-serif;
+  --font-grotesque: var(--font-grotesque-family), 'Helvetica Neue', Arial, sans-serif;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1rem;
+  --text-label-desktop: 0.75rem;
+  --text-label-desktop--line-height: 1rem;
+
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.25rem;
+  --text-caption-desktop: 0.875rem;
+  --text-caption-desktop--line-height: 1.375rem;
+
+  --text-spec: 0.9375rem;
+  --text-spec--line-height: 1.5rem;
+  --text-spec-desktop: 1rem;
+  --text-spec-desktop--line-height: 1.625rem;
+
+  --text-nav: 1.0625rem;
+  --text-nav--line-height: 1.5rem;
+  --text-nav-desktop: 0.9375rem;
+  --text-nav-desktop--line-height: 1.25rem;
+
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.75rem;
+  --text-body-desktop: 1.125rem;
+  --text-body-desktop--line-height: 1.875rem;
+
+  --text-lead: 1.1875rem;
+  --text-lead--line-height: 1.875rem;
+  --text-lead-desktop: 1.3125rem;
+  --text-lead-desktop--line-height: 2rem;
+
+  --text-title: 1.5rem;
+  --text-title--line-height: 2rem;
+  --text-title-desktop: 1.875rem;
+  --text-title-desktop--line-height: 2.375rem;
+
+  --text-statement: 1.625rem;
+  --text-statement--line-height: 2.125rem;
+  --text-statement-desktop: 2.25rem;
+  --text-statement-desktop--line-height: 2.75rem;
+
+  /* The cinematic tier. Used sparingly: hero headline, large section
+     headers, the homepage's closing CTA. Everything above stays the
+     infrastructure voice. */
+  --text-display: 2.5rem;
+  --text-display--line-height: 2.75rem;
+  --text-display-desktop: 4.5rem;
+  --text-display-desktop--line-height: 4.5rem;
+
+  --text-hero: 3.5rem;
+  --text-hero--line-height: 3.75rem;
+  --text-hero-desktop: 8rem;
+  --text-hero-desktop--line-height: 7.75rem;
+
+  /* Uppercase labels only. No letterspacing on lowercase, ever. */
+  --tracking-none: 0;
+  --tracking-label: 0.08em;
+
+  /* ---------------------------------------------------------------
+     MOTION
+
+     Decelerating throughout, no overshoot — bounce and elastic are
+     prohibited. Entry and exit are asymmetric: departures run at
+     0.75x, because leaving needs only to get out of the way while
+     arriving needs to be understood.
+
+     Durations use Tailwind's numeric `duration-*` utilities directly:
+     duration-120 / duration-180 / duration-240 / duration-300.
+     Nothing on this site animates for longer than 300ms.
+     --------------------------------------------------------------- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-response: cubic-bezier(0, 0, 0.2, 1);
+
+  --radius-none: 0;
+  --shadow-none: none;
+}
+
+/* Non-utility tokens: referenced in CSS, not exposed as classes. */
+:root {
+  --lark-travel-hint: 8px;
+  --lark-hairline: 1px;
+}
+
+/* ==================================================================
+   BASE
+   ================================================================== */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border-color: var(--color-hairline);
+  }
+
+  html {
+    /* Native scroll, one-to-one, uninterrupted. No smooth-scroll
+       interception: pace belongs to the reader. Persona C scans in
+       ninety seconds; Persona B reads slowly on a third visit. Any
+       imposed rhythm serves neither. */
+    scroll-behavior: auto;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-serif);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    font-variant-ligatures: common-ligatures;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  @media (min-width: 600px) {
+    body {
+      font-size: var(--text-body-desktop);
+      line-height: var(--text-body-desktop--line-height);
+    }
+  }
+
+  /* ----------------------------------------------------------------
+     TYPOGRAPHIC DETAIL
+     None of this is visible. All of it is felt. This is where
+     "expensive" lives — not in the choice of face.
+     ---------------------------------------------------------------- */
+
+  p,
+  blockquote {
+    hanging-punctuation: first last;
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: var(--font-weight-regular);
+    font-size: inherit;
+    hyphens: none;           /* never in headings */
+    text-wrap: balance;      /* widow and orphan control */
+    margin: 0;
+  }
+
+  /* Bahasa runs 15–20% longer and compounds badly at narrow measures.
+     Hyphenation is permitted in Indonesian body copy only. */
+  [lang='id'] p {
+    hyphens: auto;
+  }
+
+  /* ----------------------------------------------------------------
+     ACCESSIBILITY FOUNDATION
+     ---------------------------------------------------------------- */
+
+  /* Focus is a designed element, never a suppressed default, and it
+     must never animate: a keyboard user tabbing quickly needs the
+     ring present on arrival, not 120ms later. The paper-coloured
+     outer ring keeps it visible over photography as well as paper. */
+  :focus {
+    outline: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--color-paper);
+    transition: none !important;
+  }
+
+  ::selection {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  img,
+  picture,
+  video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Behaviour 9 — hero word stagger. The one CSS `@keyframes` in the
+     system, consumed only by StaggerText via an arbitrary `animate-[]`
+     utility. Opacity + the same travel hint used everywhere else. */
+  @keyframes lark-word-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--lark-travel-hint));
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Reduced motion removes every duration in the system. Nothing is
+     lost — guaranteed structurally, because motion never carries
+     information. This is not a degraded experience; it is the same
+     site, still. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  @media print {
+    body {
+      background: #fff;
+      color: #000;
+    }
+    .lark-no-print {
+      display: none;
+    }
+  }
+}
+
+/* ==================================================================
+   UTILITIES
+   Three, and only three. Each encodes a rule that cannot be expressed
+   as a theme token.
+   ================================================================== */
+
+/* Tabular lining figures, so specification columns align without
+   manual intervention. Applied to every stated fact. */
+@utility figures {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* The only place letterspacing is permitted. */
+@utility label-case {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+/* The underline-sweep hover affordance for text links and buttons — a
+   single bar that fills from the left, not a text-decoration change.
+   Requires `relative` on the element and `inline-block`/`block` so the
+   bar has something to size against. Transform, not width: compositor-
+   only, so it stays inside the same "no layout-affecting motion" rule
+   as everything else that moves. */
+@utility underline-sweep {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -0.125em;
+    width: 100%;
+    height: 1px;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 200ms var(--ease-standard);
+  }
+
+  &:hover::after {
+    transform: scaleX(1);
+  }
+}

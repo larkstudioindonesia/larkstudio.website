@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+.env*.local
+.DS_Store
+
+# Licensed typefaces are not committed to source control.
+# See public/fonts/README.md
+public/fonts/*.woff2
