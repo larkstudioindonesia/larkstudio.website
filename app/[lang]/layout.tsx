@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import { notFound } from 'next/navigation';
 import '@/app/globals.css';
 
@@ -71,6 +72,7 @@ export default async function LocaleLayout({
             address={site.address}
           />
         </MotionProvider>
+        <GoogleAnalytics gaId="G-QX30Q2164X" />
       </body>
     </html>
   );

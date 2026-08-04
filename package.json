@@ -19,6 +19,7 @@
     "test:storybook": "test-storybook"
   },
   "dependencies": {
+    "@next/third-parties": "16.3.0",
     "framer-motion": "11.15.0",
     "next": "15.5.22",
     "react": "19.0.0",
