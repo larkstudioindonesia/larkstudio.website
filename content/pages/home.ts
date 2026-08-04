@@ -35,7 +35,7 @@ export const home: HomeContent = {
   /* Declared dimensions must match the file exactly — checked by
      scripts/audit-assets.ts, same as every project image. */
   heroImage: {
-    src: '/images/home-hero.png',
+    src: '/images/home-hero.jpg',
     width: 4000,
     height: 2535,
   },
