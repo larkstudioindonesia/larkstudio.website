@@ -38,6 +38,9 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
     apple: '/apple-icon.png',
   },
+  verification: {
+    bing: 'E472E5DCFCB14A1B493CB93E948FE803',
+  },
 };
 
 export function generateStaticParams() {
