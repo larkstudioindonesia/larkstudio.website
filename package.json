@@ -13,6 +13,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "audit:assets": "tsx scripts/audit-assets.ts",
+    "sync:images": "tsx scripts/sync-image-metadata.ts",
+    "generate-assets": "tsx scripts/generate-assets.ts",
     "verify": "npm run typecheck && npm run lint && npm run audit:assets",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",

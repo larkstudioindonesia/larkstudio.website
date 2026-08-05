@@ -47,8 +47,8 @@ export const waroengAndalan: Project = {
     {
       id: 'waroeng-andalan-02',
       role: 'project',
-      landscape: { src: '/images/projects/waroeng-andalan/waroeng-andalan-02-3x2.jpg', width: 2700, height: 1800 },
-      portrait: { src: '/images/projects/waroeng-andalan/waroeng-andalan-02-4x5.jpg', width: 2448, height: 3060 },
+      landscape: { src: '/images/projects/waroeng-andalan/waroeng-andalan-02-3x2.jpg', width: 4200, height: 2800 },
+      portrait: { src: '/images/projects/waroeng-andalan/waroeng-andalan-02-4x5.jpg', width: 3220, height: 4025 },
       alt: {
         en: 'Dining room with a timber service counter, exposed brick wall and woven rattan stools along the bar.',
         id: 'Ruang makan dengan meja layanan kayu, dinding bata ekspos, dan kursi rotan anyam di sepanjang bar.',
@@ -57,8 +57,8 @@ export const waroengAndalan: Project = {
     {
       id: 'waroeng-andalan-03',
       role: 'project',
-      landscape: { src: '/images/projects/waroeng-andalan/waroeng-andalan-03-3x2.jpg', width: 2700, height: 1800 },
-      portrait: { src: '/images/projects/waroeng-andalan/waroeng-andalan-03-4x5.jpg', width: 2448, height: 3060 },
+      landscape: { src: '/images/projects/waroeng-andalan/waroeng-andalan-03-3x2.jpg', width: 4200, height: 2800 },
+      portrait: { src: '/images/projects/waroeng-andalan/waroeng-andalan-03-4x5.jpg', width: 3220, height: 4025 },
       alt: {
         en: 'Wide view of the dining hall with green structural columns, bar seating and potted plants along the aisle.',
         id: 'Pandangan luas ruang makan dengan kolom struktur hijau, kursi bar, dan tanaman pot di sepanjang lorong.',
@@ -67,8 +67,8 @@ export const waroengAndalan: Project = {
     {
       id: 'waroeng-andalan-04',
       role: 'project',
-      landscape: { src: '/images/projects/waroeng-andalan/waroeng-andalan-04-3x2.jpg', width: 2700, height: 1800 },
-      portrait: { src: '/images/projects/waroeng-andalan/waroeng-andalan-04-4x5.jpg', width: 2448, height: 3060 },
+      landscape: { src: '/images/projects/waroeng-andalan/waroeng-andalan-04-3x2.jpg', width: 4200, height: 2800 },
+      portrait: { src: '/images/projects/waroeng-andalan/waroeng-andalan-04-4x5.jpg', width: 3220, height: 4025 },
       alt: {
         en: 'Order counter with overhead menu boards, green tile accents and a black-and-white checkered floor.',
         id: 'Meja pemesanan dengan papan menu di atasnya, aksen keramik hijau, dan lantai catur hitam putih.',
@@ -77,8 +77,8 @@ export const waroengAndalan: Project = {
     {
       id: 'waroeng-andalan-05',
       role: 'project',
-      landscape: { src: '/images/projects/waroeng-andalan/waroeng-andalan-05-3x2.jpg', width: 2700, height: 1800 },
-      portrait: { src: '/images/projects/waroeng-andalan/waroeng-andalan-05-4x5.jpg', width: 2448, height: 3060 },
+      landscape: { src: '/images/projects/waroeng-andalan/waroeng-andalan-05-3x2.jpg', width: 4200, height: 2800 },
+      portrait: { src: '/images/projects/waroeng-andalan/waroeng-andalan-05-4x5.jpg', width: 3220, height: 4025 },
       alt: {
         en: 'Booth seating upholstered in green, set against a patterned tile floor along the dining room wall.',
         id: 'Kursi booth berlapis kain hijau, berdiri di atas lantai keramik bermotif di sepanjang dinding ruang makan.',
