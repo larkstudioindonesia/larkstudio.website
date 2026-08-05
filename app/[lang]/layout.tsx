@@ -28,7 +28,15 @@ import { LOCALES } from '@/content/types';
  */
 
 export const metadata: Metadata = {
-  title: { default: 'Lark Studio', template: '%s — Lark Studio' },
+  title: {
+    default: 'Lark Studio',
+    template: '%s — Lark Studio',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',
+  },
 };
 
 export function generateStaticParams() {
