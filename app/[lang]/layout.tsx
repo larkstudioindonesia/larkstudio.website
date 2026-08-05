@@ -38,9 +38,6 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
     apple: '/apple-icon.png',
   },
-  verification: {
-    bing: 'E472E5DCFCB14A1B493CB93E948FE803',
-  },
 };
 
 export function generateStaticParams() {
@@ -64,34 +61,46 @@ export default async function LocaleLayout({
   );
 
   return (
-    <html lang={HTML_LANG[locale]} className={fontVariables}>
-      <body className="flex min-h-screen flex-col bg-paper font-serif text-ink">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={jsonLdScriptProps(siteJsonLd())}
+  <html lang={HTML_LANG[locale]} className={fontVariables}>
+    <head>
+      <meta
+        name="msvalidate.01"
+        content="E472E5DCFCB14A1B493CB93E948FE803"
+      />
+    </head>
+
+    <body className="flex min-h-screen flex-col bg-paper font-serif text-ink">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScriptProps(siteJsonLd())}
+      />
+
+      <SkipLink label={ui.skipToContent[locale]} />
+
+      <MotionProvider>
+        <Header
+          locale={locale}
+          email={site.email}
+          whatsappHref={whatsappHref}
+          instagramHref={site.instagram.href}
         />
-        <SkipLink label={ui.skipToContent[locale]} />
-        <MotionProvider>
-          <Header
-            locale={locale}
-            email={site.email}
-            whatsappHref={whatsappHref}
-            instagramHref={site.instagram.href}
-          />
-          <main id="main" className="flex-1">
-            {children}
-          </main>
-          <Footer
-            locale={locale}
-            email={site.email}
-            whatsappHref={whatsappHref}
-            instagramHref={site.instagram.href}
-            address={site.address}
-          />
-        </MotionProvider>
-        <ClarityProvider />
-        <GoogleAnalytics gaId="G-QX30Q2164X" />
-      </body>
-    </html>
+
+        <main id="main" className="flex-1">
+          {children}
+        </main>
+
+        <Footer
+          locale={locale}
+          email={site.email}
+          whatsappHref={whatsappHref}
+          instagramHref={site.instagram.href}
+          address={site.address}
+        />
+      </MotionProvider>
+
+            <ClarityProvider />
+      <GoogleAnalytics gaId="G-QX30Q2164X" />
+    </body>
+  </html>
   );
 }
