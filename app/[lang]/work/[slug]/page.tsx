@@ -11,6 +11,7 @@ import { ui } from '@/content/ui';
 import { Container } from '@/components/primitives/Container';
 import { Grid } from '@/components/primitives/Grid';
 import { Measure } from '@/components/primitives/Measure';
+import { ProjectMeasure } from '@/components/primitives/ProjectMeasure';
 import { Figures, Label } from '@/components/primitives/Figures';
 import { NextProject } from '@/components/primitives/NextProject';
 import { Statement } from '@/components/sections/Statement';
@@ -117,7 +118,7 @@ export default async function ProjectPage({
       <Container>
         <div className="pt-9 tablet:pt-10 desktop:pt-11">
           <Grid>
-            <Measure>
+            <ProjectMeasure>
               <h1 className="font-serif text-title text-ink desktop:text-title-desktop">
                 {identification.name[locale]}
               </h1>
@@ -128,12 +129,16 @@ export default async function ProjectPage({
                 <span aria-hidden="true"> · </span>
                 <Figures>{identification.year}</Figures>
               </p>
-            </Measure>
+            </ProjectMeasure>
           </Grid>
         </div>
       </Container>
 
-      <Statement eyebrow={ui.challengeHeading[locale]} paragraphs={[project.constraint[locale]]} />
+      <Statement
+        eyebrow={ui.challengeHeading[locale]}
+        paragraphs={[project.constraint[locale]]}
+        align="left"
+      />
 
       <Concept eyebrow={ui.conceptHeading[locale]} decisions={decisions} />
 

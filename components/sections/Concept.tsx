@@ -1,6 +1,6 @@
 import { Container } from '@/components/primitives/Container';
 import { Grid } from '@/components/primitives/Grid';
-import { Measure } from '@/components/primitives/Measure';
+import { ProjectMeasure } from '@/components/primitives/ProjectMeasure';
 import { Label } from '@/components/primitives/Figures';
 import type { ResolvedPassage } from '@/components/sections/Prose';
 
@@ -10,6 +10,11 @@ import type { ResolvedPassage } from '@/components/sections/Prose';
  * content/types.ts) as a parallel grid rather than Prose's sequential
  * column: these are independent judgement calls, not one unfolding
  * argument.
+ *
+ * Uses `ProjectMeasure`, not `Measure` — this section is exclusive to
+ * the project detail page, and its eyebrow needs to share a left edge
+ * with `MaterialPalette`'s image grid (column 1) rather than sitting
+ * indented at column 3.
  */
 export function Concept({
   eyebrow,
@@ -22,9 +27,9 @@ export function Concept({
     <section className="pb-9 pt-9 tablet:pb-10 tablet:pt-10 desktop:pb-11 desktop:pt-11">
       <Container>
         <Grid>
-          <Measure>
+          <ProjectMeasure>
             <Label>{eyebrow}</Label>
-          </Measure>
+          </ProjectMeasure>
         </Grid>
 
         <div className="mt-7 tablet:mt-8">
