@@ -1,8 +1,4 @@
-'use client';
-
 import Image from 'next/image';
-import { useState } from 'react';
-import { Motion, maskReveal } from '@/lib/motion';
 import type { ImageSource } from '@/content/types';
 
 /**
@@ -23,11 +19,18 @@ export type HeroMediaSource =
  * `RevealImage`'s 9 existing call sites are provably unaffected by
  * this addition.
  *
- * Behaviour 10 of the motion budget — mask reveal, 800ms, once. Unlike
- * `RevealImage`'s opacity-only fade, this animates `clip-path` (a
- * compositor property, not layout) from fully masked to fully
- * revealed on the image's own decode — still decode-triggered, not
- * scroll-triggered, same rule `RevealImage` follows.
+ * A plain server component, not a client one — no state, no effects.
+ * It used to hold behaviour 10 of the motion budget (a decode-gated
+ * `clip-path` "mask reveal"), which was removed: Lighthouse identified
+ * the hero image as the homepage's Largest Contentful Paint candidate,
+ * and a `clip-path` starting at `inset(0 0 100% 0)` gives the browser
+ * zero visible pixels to measure until the animation resolves — LCP
+ * timing simply excludes an element that isn't painted yet. Holding
+ * that curtain for even part of an 800ms animation was directly
+ * costing LCP time with no way to keep both the effect and the score.
+ * The image now paints as soon as the browser can show it — which,
+ * with `priority` set below, is as fast as this page can make it
+ * arrive — and that IS the reveal.
  */
 export function HeroMedia({
   media,
@@ -36,8 +39,6 @@ export function HeroMedia({
   media: HeroMediaSource;
   priority?: boolean;
 }) {
-  const [decoded, setDecoded] = useState(false);
-
   if (media.kind === 'video') {
     /* Not implemented yet — the type exists so a future video asset
        swaps in without touching Hero.tsx or this component's shape. */
@@ -46,27 +47,17 @@ export function HeroMedia({
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-sunk">
-      <Motion.div
-        className="absolute inset-0"
-        variants={maskReveal}
-        initial="hidden"
-        animate={decoded ? 'visible' : 'hidden'}
-      >
-        <Image
-          src={media.image.src}
-          alt={media.alt}
-          width={media.image.width}
-          height={media.image.height}
-          sizes="100vw"
-          priority={priority}
-          loading={priority ? 'eager' : 'lazy'}
-          placeholder="empty"
-          onLoad={() => {
-            setDecoded(true);
-          }}
-          className="h-full w-full object-cover"
-        />
-      </Motion.div>
+      <Image
+        src={media.image.src}
+        alt={media.alt}
+        width={media.image.width}
+        height={media.image.height}
+        sizes="100vw"
+        priority={priority}
+        loading={priority ? 'eager' : 'lazy'}
+        placeholder="empty"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
 
       {/* Flat wash, not a gradient — darkens the photograph uniformly
           so header/hero text stays legible over any image without a

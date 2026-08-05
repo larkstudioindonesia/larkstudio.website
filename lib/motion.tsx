@@ -13,7 +13,7 @@
  * installed and unguarded acquires scroll reveals within a year, not
  * through a bad decision but through twelve reasonable ones.
  *
- * THE MOTION BUDGET — thirteen behaviours, complete:
+ * THE MOTION BUDGET — twelve behaviours, complete:
  *
  *   1.  Pointer response, 120ms ............... CSS
  *   2.  Focus ring, instant .................... CSS (never animates)
@@ -23,27 +23,32 @@
  *   6.  Navigation panel, 240/180ms ............ here — panelSurface
  *   7.  Page transition, 300ms ................. here — pageEnter
  *   8.  Section reveal on scroll, 400ms ........ here — sectionReveal
- *   9.  Hero word stagger, ≤500ms .............. CSS (StaggerText)
- *   10. Hero mask reveal, 800ms, once .......... here — maskReveal
- *   11. Gallery hover zoom, 700ms .............. CSS (RevealImage hoverZoom)
- *   12. Navbar background fade, 240ms .......... CSS + useInView
- *   13. Underline sweep on hover, 200ms ........ CSS
+ *   9.  Hero word rise, ≤500ms ................. CSS (StaggerText)
+ *   10. Gallery hover zoom, 700ms .............. CSS (RevealImage hoverZoom)
+ *   11. Navbar background fade, 240ms .......... CSS + useInView
+ *   12. Underline sweep on hover, 200ms ........ CSS
  *
- * No fourteenth behaviour is added without removing one of these.
+ * No thirteenth behaviour is added without removing one of these.
  *
- * Behaviours 8 and 10 are DELIBERATE, NARROW REVERSALS of two rules
- * this file used to state absolutely:
+ * Behaviour 8 is a DELIBERATE, NARROW REVERSAL of a rule this file
+ * used to state absolutely: "The reveal is triggered by decode, not
+ * by scroll" (still true for every `RevealImage` use site).
+ * `sectionReveal` is scroll-triggered, on purpose, via
+ * `lib/useInView.ts` — a plain `IntersectionObserver`, not Framer's
+ * `useScroll`/`whileInView`. It is opt-in per section (`ScrollReveal`),
+ * fires once, and still respects `prefers-reduced-motion` through
+ * `MotionConfig` below.
  *
- *   — "The reveal is triggered by decode, not by scroll" (still true
- *     for every `RevealImage` use site). `sectionReveal` is scroll-
- *     triggered, on purpose, via `lib/useInView.ts` — a plain
- *     `IntersectionObserver`, not Framer's `useScroll`/`whileInView`.
- *     It is opt-in per section (`ScrollReveal`), fires once, and still
- *     respects `prefers-reduced-motion` through `MotionConfig` below.
- *   — "Nothing on this site animates for longer than 300ms." `maskReveal`
- *     runs 800ms, exactly once per page load, reserved for the hero
- *     image's opening curtain and nowhere else. Every other behaviour
- *     in the table stays under 300ms.
+ * RETIRED: a `maskReveal` `clip-path` curtain used to run once on the
+ * hero image, decode-gated, 800ms — the one documented exception to
+ * the 300ms ceiling. It was removed after Lighthouse identified the
+ * hero image as the homepage's Largest Contentful Paint element: a
+ * `clip-path` starting fully closed gives the browser zero visible
+ * pixels to score until the animation resolves, so LCP simply waited
+ * for it. There is no version of "hide most of the image, then reveal
+ * it" that doesn't cost LCP time — the two goals were exclusive, and
+ * the measured page-speed impact outweighed the effect. See
+ * `components/primitives/HeroMedia.tsx`.
  *
  * CONCURRENCY, absolute: at most one Tier 2 or Tier 3 motion runs at
  * any moment. If a page transition is in flight, images arrive
@@ -76,9 +81,6 @@ export const DURATION = {
   passage: 0.3,
   /** Tier 3-adjacent — scroll-triggered section entrance. */
   reveal: 0.4,
-  /** Tier 4 — the one documented exception to the 300ms ceiling.
-   *  Reserved for the hero image's mask reveal, once per page load. */
-  cinematic: 0.8,
 } as const;
 
 export const EASE = {
@@ -175,24 +177,6 @@ export const sectionReveal: Variants = {
     opacity: 1,
     y: 0,
     transition: { duration: DURATION.reveal, ease: EASE.standard },
-  },
-};
-
-/**
- * Behaviour 10 — hero mask reveal.
- *
- * `clip-path`, not `transform: scale`. The photograph's pixels never
- * change size, only how much of the frame is currently visible — a
- * compositor-only property, so this carries no CLS risk despite the
- * longer duration. Reserved for `HeroMedia` and nowhere else: this is
- * the one place in the system a curtain-style reveal is permitted, and
- * it runs once per page load, never on scroll-back.
- */
-export const maskReveal: Variants = {
-  hidden: { clipPath: 'inset(0 0 100% 0)' },
-  visible: {
-    clipPath: 'inset(0 0 0% 0)',
-    transition: { duration: DURATION.cinematic, ease: EASE.standard },
   },
 };
 

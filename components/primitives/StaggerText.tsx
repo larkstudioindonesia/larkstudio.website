@@ -15,6 +15,15 @@ type Tag = 'span' | 'h1' | 'p';
  * `prefers-reduced-motion` is already handled globally — the base-
  * layer media query in `app/globals.css` zeroes every `animation-
  * duration` on the page, this included.
+ *
+ * The `lark-word-in` keyframe animates `transform` only, never
+ * `opacity` — this component is used for the hero headline, which
+ * Lighthouse identifies as the page's Largest Contentful Paint
+ * element. An opacity-0 starting state makes an element unpaintable
+ * (and therefore LCP-ineligible) until its animation resolves; on a
+ * throttled mobile CPU that pushed LCP out by several hundred ms for
+ * no visual benefit worth the cost. Words are fully opaque and
+ * paintable immediately; only their vertical offset animates.
  */
 export function StaggerText({
   text,

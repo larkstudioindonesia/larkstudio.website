@@ -26,11 +26,11 @@ export default tseslint.config(
          Framer Motion has exactly one import site in the codebase.
          Its most-used features are the ones our motion language
          prohibits most emphatically, so the library is quarantined
-         behind lib/motion.ts, which exports a closed set of five
-         variants (imageReveal, panelSurface, pageEnter, sectionReveal,
-         maskReveal — the motion budget in lib/motion.tsx documents all
-         thirteen behaviours built from them). Adding a sixth variant
-         means editing that file — a visible, reviewable act.
+         behind lib/motion.ts, which exports a closed set of four
+         variants (imageReveal, panelSurface, pageEnter, sectionReveal
+         — the motion budget in lib/motion.tsx documents all twelve
+         behaviours built from them). Adding a fifth variant means
+         editing that file — a visible, reviewable act.
          ------------------------------------------------------------ */
       'no-restricted-imports': [
         'error',

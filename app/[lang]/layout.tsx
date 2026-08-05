@@ -9,6 +9,7 @@ import { fontVariables } from '@/lib/fonts';
 import { MotionProvider } from '@/lib/motion';
 import { HTML_LANG, isLocale, type Locale } from '@/lib/i18n';
 import { whatsappLink } from '@/lib/paths';
+import { siteJsonLd, jsonLdScriptProps } from '@/lib/schema';
 import { SkipLink } from '@/components/primitives/SkipLink';
 import { Header } from '@/components/chrome/Header';
 import { Footer } from '@/components/chrome/Footer';
@@ -62,6 +63,10 @@ export default async function LocaleLayout({
   return (
     <html lang={HTML_LANG[locale]} className={fontVariables}>
       <body className="flex min-h-screen flex-col bg-paper font-serif text-ink">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLdScriptProps(siteJsonLd())}
+        />
         <SkipLink label={ui.skipToContent[locale]} />
         <MotionProvider>
           <Header

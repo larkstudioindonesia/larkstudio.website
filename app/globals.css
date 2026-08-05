@@ -331,13 +331,18 @@
   /* Behaviour 9 — hero word stagger. The one CSS `@keyframes` in the
      system, consumed only by StaggerText via an arbitrary `animate-[]`
      utility. Opacity + the same travel hint used everywhere else. */
+  /* Transform only — deliberately no `opacity`. An opacity-0 start
+     disqualifies the element from paint until the animation resolves,
+     which is exactly what made the hero headline (this animation's
+     only user) miss the browser's Largest Contentful Paint window by
+     several hundred ms: LCP requires the element to already be
+     visible. `transform` doesn't have that problem — the text is
+     opaque and paintable from frame one, just offset a few pixels. */
   @keyframes lark-word-in {
     from {
-      opacity: 0;
       transform: translateY(var(--lark-travel-hint));
     }
     to {
-      opacity: 1;
       transform: translateY(0);
     }
   }

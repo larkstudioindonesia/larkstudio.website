@@ -10,6 +10,7 @@ export const site = {
     id: 'Halo Lark Studio, Saya ingin berdiskusi mengenai proyek arsitektur dan interior.',
   } satisfies Localized<string>,
   address: ['Achmad Adnawijaya St B7 No.5', 'Bogor 16152', 'Indonesia'],
+  logo: '/logo/larkstudio_logo-removebg-preview.png',
   instagram: {
     handle: '@larkstudio.id',
     href: 'https://instagram.com/larkstudio.id',
