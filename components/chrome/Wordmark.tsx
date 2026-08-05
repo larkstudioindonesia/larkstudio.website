@@ -12,17 +12,17 @@ export function Wordmark({ locale }: { locale: Locale }) {
   return (
     <Link
       href={paths.home(locale)}
-      className="inline-flex h-[64px] w-[64px] items-center justify-center"
+      className="inline-flex h-[44px] w-[44px] items-center justify-center"
       aria-label="Lark Studio"
       title="Lark Studio"
     >
       <Image
         src="/logo/larkstudio_logo-removebg-preview.png"
         alt="Lark Studio"
-        width={64}
-        height={64}
+        width={619}
+        height={823}
         priority
-        className="h-full w-full object-cover"
+        className="h-full w-full object-contain"
       />
     </Link>
   );
