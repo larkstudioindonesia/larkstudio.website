@@ -1,0 +1,113 @@
+import type { ReactNode } from 'react';
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import '@/app/globals.css';
+
+import { fontVariables, isLocale, organisationJsonLd } from '@/lib/site';
+import { MotionProvider } from '@/lib/motion';
+import { LOCALES, type Locale } from '@/content/types';
+import { site, ui } from '@/content/site';
+import { SkipLink } from '@/components/ui';
+import { Cursor, Footer, Header, Preloader, ScrollRail } from '@/components/chrome';
+
+/**
+ * THE APPLICATION SHELL.
+ *
+ * Header, main, footer, and four pieces of document chrome that render
+ * no content: the opening sequence, the scroll rail, the cursor and the
+ * grain overlay. No announcement bar, no cookie banner (analytics are
+ * cookieless, so consent is not required), no chat widget, no
+ * back-to-top button.
+ *
+ * `MotionProvider` is mounted once here so LazyMotion's feature set
+ * loads a single time, every `Motion` component shares it, and Lenis has
+ * exactly one instance.
+ *
+ * HEADER CLEARANCE IS NOT SET HERE. The header is `fixed` on every
+ * route, so something has to reserve space beneath it — but `<main>` is
+ * the wrong place. Padding it pushes down the two pages that are
+ * supposed to run underneath the bar (the homepage hero, a project's
+ * full-bleed opener), which then cancel it with a negative margin; that
+ * cancellation collides with `min-h-dvh` and clips the top of the
+ * headline off-screen where there is no scrollback. Clearance belongs to
+ * the sections that want it.
+ */
+
+export const metadata: Metadata = {
+  title: { default: site.name, template: `%s — ${site.name}` },
+};
+
+export function generateStaticParams() {
+  return LOCALES.map((lang) => ({ lang }));
+}
+
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  if (!isLocale(lang)) notFound();
+  const locale: Locale = lang;
+
+  return (
+    <html lang={locale} className={fontVariables}>
+      <body className="flex min-h-screen flex-col bg-paper font-text text-ink">
+        <script
+          type="application/ld+json"
+          /* Serialised from a typed object literal — no user input
+             reaches this string. */
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organisationJsonLd) }}
+        />
+
+        {/*
+          NO-JAVASCRIPT FAILSAFE.
+
+          Every reveal on this site renders its initial state into the
+          server HTML — `opacity: 0`, a closed `clip-path`, an offset
+          transform. That is correct for the animation and catastrophic
+          without it: the copy is all present in the markup, but a
+          visitor with JavaScript disabled sees a correctly-structured,
+          entirely blank page. `!important` in a stylesheet outranks an
+          inline declaration, so these five lines put everything back.
+          Nothing here conveys meaning through transform or opacity,
+          which is what makes the blunt reset safe.
+        */}
+        <noscript>
+          <style>{`
+            main *, footer * {
+              opacity: 1 !important;
+              transform: none !important;
+              clip-path: none !important;
+              filter: none !important;
+            }
+          `}</style>
+        </noscript>
+
+        <SkipLink label={ui.skipToContent[locale]} />
+
+        <MotionProvider>
+          <Preloader />
+          <ScrollRail />
+          <Cursor />
+
+          <Header locale={locale} />
+
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+
+          <Footer locale={locale} />
+        </MotionProvider>
+
+        {/* Grain sits above everything except the menu and the cursor.
+            Pointer-events none, one composited layer, no per-frame work
+            — and it is what stops six consecutive full-width areas of
+            near-black reading as flat. */}
+        <div className="grain no-print" aria-hidden="true" />
+      </body>
+    </html>
+  );
+}

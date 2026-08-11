@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output and caches
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Deployment
+.vercel/
+
+# Environment — no secret ever reaches the repository.
+# `.env.example` is the one env file that is committed, if the project
+# ever needs one; today it needs none.
+.env
+.env.*
+!.env.example
+
+# OS noise
+.DS_Store
+
+# Per-machine tool state, not project configuration
+.claude/settings.local.json

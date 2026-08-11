@@ -1,0 +1,487 @@
+@import 'tailwindcss';
+
+@source '../app';
+@source '../components';
+@source '../content';
+@source '../lib';
+
+/* ==================================================================
+   LARK STUDIO — DESIGN TOKENS
+
+   Tailwind v4, CSS-first. There is no tailwind.config.ts: this file is
+   the single source of truth for every design decision.
+
+   Tailwind's defaults are RESET, not extended. Radius 0, no shadows and
+   a closed colour and spacing scale are decisions — leaving the defaults
+   installed would make them optional. Note that `grid-cols-<n>`,
+   `z-<n>`, `col-span-<n>` and `duration-<ms>` are dynamic utilities,
+   not theme namespaces: they cannot be aliased here and are used
+   numerically at the call site.
+   ================================================================== */
+
+@theme {
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --font-weight-*: initial;
+  --tracking-*: initial;
+  --leading-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --blur-*: initial;
+  --breakpoint-*: initial;
+  --container-*: initial;
+  --ease-*: initial;
+  --animate-*: initial;
+  --spacing: initial;
+
+  /* ---------------------------------------------------------------
+     COLOUR
+
+     Neither end is absolute. Paper sits at #0B0B0C rather than #000 so
+     it never crushes shadow detail in the photography it surrounds;
+     ink is warm off-white so it never glares at full-screen scale.
+
+     There is exactly one chromatic token. `brass` is the studio's
+     single accent — rules, marks, the glow behind the closing block —
+     and it is warm because every photograph on this site is warm. It
+     never fills a button and never sets a paragraph.
+     --------------------------------------------------------------- */
+  --color-paper: #0b0b0c;
+  --color-sunk: #121214;
+  --color-raised: #1a1a1d;
+  --color-ink: #f4f2ed;
+  --color-ink-2: #9c9992;
+  --color-ink-3: #6a6761;
+  --color-line: rgba(244, 242, 237, 0.1);
+  --color-line-strong: rgba(244, 242, 237, 0.24);
+  --color-brass: #c8a06a;
+  --color-brass-soft: rgba(200, 160, 106, 0.3);
+
+  /* The one inverse surface, reserved for the footer. If it appeared in
+     three places it would become a decorative device and the system
+     would lose its single-surface discipline. */
+  --color-bone: #eeeae1;
+  --color-bone-ink: #121214;
+  --color-bone-ink-2: #55524c;
+  --color-bone-line: rgba(18, 18, 20, 0.12);
+
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* ---------------------------------------------------------------
+     SPACE — atomic unit 4px, functional step 8px.
+     The dynamic scale is disabled, so `p-13` does not exist.
+     --------------------------------------------------------------- */
+  --spacing-0: 0px;
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.5rem;
+  --spacing-6: 2rem;
+  --spacing-7: 3rem;
+  --spacing-8: 4rem;
+  --spacing-9: 6rem;
+  --spacing-10: 8rem;
+  --spacing-11: 9rem;
+  --spacing-12: 12rem;
+
+  /* Set by measure, not by device: each is the point at which the
+     reading column stops working. */
+  --breakpoint-tablet: 640px;
+  --breakpoint-desktop: 1024px;
+  --breakpoint-wide: 1440px;
+
+  /* Structural content caps here; images are exempt and run to the
+     viewport. That tension is the entire editorial effect. */
+  --container-structure: 1760px;
+
+  /* ---------------------------------------------------------------
+     TYPE
+
+     A high-contrast editorial serif for display, a neutral grotesque
+     for everything else. The contrast comes from the letterforms, not
+     from the size — two grotesques at different scales is why the
+     previous revision read as large body copy rather than as headlines.
+
+     The display tier is fluid. Discrete display type is the tell of a
+     templated site: correct at three widths and slightly wrong at every
+     other one. Reading sizes stay discrete — body copy wants a stable
+     measure, not a size that drifts under the reader.
+     --------------------------------------------------------------- */
+  --font-display: var(--font-display-family), Georgia, 'Times New Roman', serif;
+  --font-text: var(--font-text-family), 'Helvetica Neue', Arial, sans-serif;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1rem;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.1rem;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.3rem;
+  --text-spec: 0.9375rem;
+  --text-spec--line-height: 1.6rem;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.75rem;
+  --text-body-lg: 1.125rem;
+  --text-body-lg--line-height: 1.85rem;
+  --text-lead: clamp(1.25rem, 0.95rem + 1.1vw, 1.5rem);
+  --text-lead--line-height: 1.55;
+
+  --text-title: clamp(1.5rem, 1.1rem + 1.7vw, 2rem);
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.01em;
+
+  --text-statement: clamp(1.875rem, 1.1rem + 3.4vw, 3rem);
+  --text-statement--line-height: 1.14;
+  --text-statement--letter-spacing: -0.015em;
+
+  --text-display: clamp(2.75rem, 1.1rem + 7vw, 6rem);
+  --text-display--line-height: 0.98;
+  --text-display--letter-spacing: -0.02em;
+
+  /* Capped by the longest real headline, not by how large the type
+     could be: three lines of Bahasa plus a subhead and an action has to
+     fit a 900px viewport on a bottom-aligned hero. */
+  --text-hero: clamp(3rem, 0.8rem + 9vw, 7.5rem);
+  --text-hero--line-height: 0.94;
+  --text-hero--letter-spacing: -0.025em;
+
+  /* The footer wordmark and nothing else. Runs to the container edge at
+     every width, which is the whole point of it. */
+  --text-mega: clamp(3.5rem, -1rem + 27vw, 22rem);
+  --text-mega--line-height: 0.86;
+  --text-mega--letter-spacing: -0.03em;
+
+  /* Uppercase labels only. No letterspacing on lowercase, ever. */
+  --tracking-none: 0;
+  --tracking-tight: -0.02em;
+  --tracking-label: 0.1em;
+  --tracking-wide: 0.16em;
+
+  /* ---------------------------------------------------------------
+     MOTION — decelerating throughout, no overshoot.
+     --------------------------------------------------------------- */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --radius-none: 0;
+  --radius-full: 9999px;
+  --shadow-none: none;
+  --blur-sm: 4px;
+  --blur-md: 14px;
+  --blur-lg: 40px;
+  --blur-xl: 90px;
+
+  /* The one continuously-running animation in the system, and it stops
+     under reduced motion. */
+  --animate-drift: lark-drift 24s ease-in-out infinite;
+
+  /* THE PAGE TRANSITION IS CSS, NOT JAVASCRIPT, and that is a
+     correctness decision rather than a performance one. The curtain
+     covers the whole viewport until it finishes; driving it from React
+     means any frame loop that never starts — a backgrounded tab on
+     arrival, a hydration error, a throttled device — leaves the site as
+     a black rectangle. A CSS animation with `forwards` always reaches
+     its end state, and the reduced-motion rule collapses it to nothing. */
+  --animate-curtain: lark-curtain 0.8s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+  --animate-arrive: lark-arrive 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+
+/* Non-utility tokens: referenced in CSS, never exposed as classes. */
+:root {
+  /* Live document scroll progress, 0→1. Written once per frame by the
+     Lenis provider so CSS can read scroll position without any
+     component subscribing to a scroll event of its own. */
+  --scroll: 0;
+}
+
+/* ==================================================================
+   BASE
+   ================================================================== */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border-color: var(--color-line);
+    min-width: 0;
+  }
+
+  /**
+   * The overflow guard lives on <html>, NOT on <body>, and that
+   * distinction cost an afternoon. `overflow-x: clip` on the body
+   * computes to `overflow: clip visible`, which is enough for Framer's
+   * `useScroll` to treat the body as the scroll container — every
+   * scroll-linked value then reports progress 1 at scroll position 0,
+   * and the whole hero renders at opacity 0 on arrival.
+   */
+  html {
+    overflow-x: clip;
+    scroll-behavior: auto;
+    scroll-padding-top: 6rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-text);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* The four rules Lenis needs, inlined so the stylesheet has no
+     dependency on a node_modules path. */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis:not(.lenis-autoToggle).lenis-stopped {
+    overflow: clip;
+  }
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+  .lenis.lenis-smooth iframe {
+    pointer-events: none;
+  }
+
+  /* ----------------------------------------------------------------
+     TYPOGRAPHIC DETAIL
+     None of this is visible. All of it is felt.
+     ---------------------------------------------------------------- */
+  p,
+  blockquote {
+    margin: 0;
+    text-wrap: pretty;
+    hanging-punctuation: first last;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0;
+    font-size: inherit;
+    font-weight: var(--font-weight-regular);
+    hyphens: none;
+    text-wrap: balance;
+  }
+
+  /* Bahasa runs 15–20% longer and compounds badly at narrow measures.
+     Hyphenation is permitted in Indonesian body copy only. */
+  [lang='id'] p {
+    hyphens: auto;
+  }
+
+  /* Focus is a designed element, never a suppressed default, and it must
+     never animate: a keyboard user tabbing quickly needs the ring present
+     on arrival, not 160ms later. */
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+    border-radius: 1px;
+    transition: none !important;
+  }
+
+  ::selection {
+    background-color: var(--color-brass);
+    color: var(--color-paper);
+  }
+
+  img,
+  picture,
+  video,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  img {
+    height: auto;
+  }
+
+  /* ----------------------------------------------------------------
+     KEYFRAMES
+     ---------------------------------------------------------------- */
+
+  /* The ambient glow behind the closing block. One composited layer,
+     transform and opacity only — no filter animation, which is what
+     makes an animated gradient cost nothing per frame. */
+  @keyframes lark-drift {
+    0%,
+    100% {
+      transform: translate3d(-6%, -4%, 0) scale(1);
+      opacity: 0.55;
+    }
+    50% {
+      transform: translate3d(6%, 4%, 0) scale(1.12);
+      opacity: 0.85;
+    }
+  }
+
+  @keyframes lark-curtain {
+    from {
+      transform: scaleY(1);
+    }
+    to {
+      transform: scaleY(0);
+    }
+  }
+
+  /* The arriving page rises into place. Small — 28px over 900ms — so a
+     navigation reads as a page settling rather than as a slide. */
+  @keyframes lark-arrive {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 28px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  /* Reduced motion removes every duration, stops the looping animations
+     outright, and the Lenis provider declines to mount. Nothing is lost,
+     guaranteed structurally: motion never carries information here. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .grain,
+    .cursor {
+      display: none !important;
+    }
+  }
+
+  /* Coarse pointers get no custom cursor and no hover-only affordance. */
+  @media (pointer: coarse) {
+    .cursor {
+      display: none !important;
+    }
+  }
+
+  @media print {
+    body {
+      background: #fff;
+      color: #000;
+    }
+    .no-print {
+      display: none;
+    }
+  }
+}
+
+/* ==================================================================
+   UTILITIES
+   Each encodes a rule that cannot be expressed as a theme token.
+   ================================================================== */
+
+/* Tabular lining figures, so specification columns align without manual
+   intervention. Applied to every stated fact. */
+@utility figures {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* The only place letterspacing is permitted. */
+@utility label {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-family: var(--font-text);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+}
+
+/**
+ * A line of type arriving from behind its own top edge. The mask is the
+ * parent's overflow; the child carries the transform.
+ *
+ * THE PADDING IS SLACK, NOT SPACING, and it is needed on both axes.
+ * Display type here runs at line-heights below 1, which means the glyph
+ * box is taller than the line box it sits in — ascenders overflow the
+ * top and descenders the bottom, and `overflow: hidden` then clips the
+ * type it is supposed to be revealing. The negative margins cancel the
+ * padding so the slack costs no layout.
+ */
+@utility mask {
+  display: block;
+  overflow: hidden;
+  padding: 0.14em 0;
+  margin: -0.14em 0;
+}
+
+/* The underline affordance: a bar that wipes in from the left and out
+   to the right, so a pointer crossing a list of links reads as one
+   continuous gesture rather than a row of independent toggles.
+   Transform, not width — compositor only. */
+@utility sweep {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -0.15em;
+    width: 100%;
+    height: 1px;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 420ms var(--ease-expo);
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    transform-origin: left;
+    transform: scaleX(1);
+  }
+}
+
+/* Film grain: a static SVG turbulence tile at very low opacity over the
+   whole document. The cheapest thing that stops large flat dark areas
+   reading as flat dark areas — one composited layer, no per-frame work. */
+@utility grain {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* A soft brass wash. Used behind the closing block and the hero's lower
+   edge; `filter: blur()` is set once and never animated. */
+@utility glow {
+  pointer-events: none;
+  position: absolute;
+  border-radius: var(--radius-full);
+  background: radial-gradient(
+    circle at center,
+    var(--color-brass-soft) 0%,
+    transparent 70%
+  );
+  filter: blur(var(--blur-xl));
+}
