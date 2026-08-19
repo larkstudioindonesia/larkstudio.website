@@ -34,8 +34,22 @@ export function middleware(request: NextRequest) {
   return NextResponse.redirect(url);
 }
 
+/**
+ * WHAT THE LOCALE REDIRECT MUST NOT TOUCH.
+ *
+ * This used to be a hand-written list of asset paths, and a hand-written
+ * list is wrong the moment anything is added. Three things were already
+ * broken by it: `apple-icon.png` and `manifest.webmanifest` were being
+ * redirected to `/en/...` and served as 404s, so iOS had no home-screen
+ * icon and no browser could read the manifest. `images-2` only worked by
+ * accident, because the string happens to start with the listed
+ * `images`.
+ *
+ * The rule is now structural rather than enumerated: SKIP ANYTHING THAT
+ * LOOKS LIKE A FILE. A locale route never contains a dot, and every
+ * static asset and metadata route does — `.png`, `.ico`, `.jpg`, `.txt`,
+ * `.xml`, `.webmanifest`. Nothing has to be added here again.
+ */
 export const config = {
-  matcher: [
-    '/((?!_next|images|logo.png|og|icon.png|favicon.ico|robots.txt|sitemap.xml).*)',
-  ],
+  matcher: ['/((?!_next/|.*\\.).*)'],
 };

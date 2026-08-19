@@ -361,12 +361,12 @@ export function Portfolio({
  * panel reads as waiting rather than as a dimmed copy of the live one.
  */
 const META: Variants = {
-  dim: { opacity: 0.12, y: 18 },
+  dim: { opacity: 0.2, y: 18 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.75, ease: EASE.expo } },
 };
 
 const META_LEAD: Variants = {
-  dim: { opacity: 0.12, y: 34 },
+  dim: { opacity: 0.2, y: 34 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.95, ease: EASE.expo } },
 };
 
@@ -477,7 +477,14 @@ function Panel({
               ref={plate.ref as React.RefObject<HTMLDivElement>}
               style={{ x: plate.x, y: plate.y }}
               initial={false}
-              animate={{ scale: active ? 1 : 1.06, opacity: active ? 1 : 0.45 }}
+              /* 0.8, NOT 0.45. The inactive state has to say "waiting",
+                 not "empty". These are dark architectural renders on a
+                 near-black ground, so at 0.45 a neighbouring panel stops
+                 reading as a dimmed photograph and starts reading as a
+                 broken image — which is exactly how it was reported. The
+                 distinction is carried by the METADATA instead, which
+                 can drop much further without looking like a failure. */
+              animate={{ scale: active ? 1 : 1.02, opacity: active ? 1 : 0.8 }}
               transition={{ duration: 1.15, ease: EASE.expo }}
             >
               <Fill

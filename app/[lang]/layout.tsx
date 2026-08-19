@@ -33,7 +33,22 @@ import { Cursor, Footer, Header, Preloader, ScrollRail } from '@/components/chro
  * the sections that want it.
  */
 
+/**
+ * ROOT METADATA.
+ *
+ * `metadataBase` is what turns every relative asset path below — and the
+ * OG images in `buildMetadata` — into the absolute URLs that crawlers and
+ * social scrapers require. Without it Next emits relative `og:image`
+ * paths and link previews silently fail off-origin.
+ *
+ * The icons are NOT listed here. `app/icon.png`, `app/apple-icon.png`
+ * and `app/favicon.ico` are file-convention routes: Next discovers them,
+ * fingerprints them and emits the `<link>` tags itself. Declaring them
+ * again by hand would produce duplicate, unfingerprinted tags that
+ * compete with the generated ones.
+ */
 export const metadata: Metadata = {
+  metadataBase: new URL(site.origin),
   title: { default: site.name, template: `%s — ${site.name}` },
 };
 

@@ -189,6 +189,12 @@
   /* ---------------------------------------------------------------
      MOTION — decelerating throughout, no overshoot.
      --------------------------------------------------------------- */
+  /* The overture's title entrance tracking. A phone cannot absorb the
+     0.4em the desktop composition opens on — see the note on the title
+     in components/chrome.tsx — so it is a token with a breakpoint
+     rather than a hard-coded value inside a motion prop. */
+  --overture-track: 0.14em;
+
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-quart: cubic-bezier(0.76, 0, 0.24, 1);
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
@@ -382,6 +388,13 @@
   /* Reduced motion removes every duration, stops the looping animations
      outright, and the Lenis provider declines to mount. Nothing is lost,
      guaranteed structurally: motion never carries information here. */
+  /* From the tablet breakpoint up the full cinematic tracking applies. */
+  @media (min-width: 640px) {
+    :root {
+      --overture-track: 0.4em;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

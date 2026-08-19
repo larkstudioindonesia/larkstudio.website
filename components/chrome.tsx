@@ -286,7 +286,12 @@ export function Header({ locale }: { locale: Locale }) {
           >
             <Link
               href={paths.home(locale)}
-              className="group inline-flex items-center gap-3"
+              /* No `gap` any more: the wordmark that sat beside the mark
+                 is gone, and a gap on a single-child flex row leaves the
+                 logo sitting off its own left edge — the "empty text gap"
+                 the brief warns about. The accessible name moves entirely
+                 onto `aria-label`, because the mark's `alt` is empty. */
+              className="group -m-1 inline-flex items-center p-1"
               aria-label={site.name}
             >
               {/*
@@ -310,11 +315,8 @@ export function Header({ locale }: { locale: Locale }) {
                 height={200}
                 priority
                 unoptimized
-                className="h-[44px] w-[44px] object-contain transition-transform duration-500 ease-expo group-hover:rotate-[8deg]"
+                className="h-[42px] w-[42px] object-contain transition-transform duration-500 ease-expo group-hover:rotate-[8deg] tablet:h-[46px] tablet:w-[46px]"
               />
-              <span className="hidden font-display text-title leading-none text-ink tablet:block">
-                Lark Studio
-              </span>
             </Link>
           </Motion.div>
 
@@ -866,10 +868,23 @@ const PLATES = [
 ] as const;
 
 /** The whole sequence. Act II is gated on the exit, not on this. */
-const OVERTURE_MS = 6900;
+/* 7.5s. The title card finishes assembling at roughly 7.05 — the
+   locality line is the last thing in, at 5.95 over 1.1s — so this
+   leaves a genuine half-second of stillness on the finished
+   composition before the aperture opens. Cutting at 6.9 clipped the
+   payoff and the sequence ended on a move rather than on a held
+   frame. */
+const OVERTURE_MS = 7500;
 
-const WORDMARK_A = 'LARK'.split('');
-const WORDMARK_B = 'STUDIO'.split('');
+/** The title, per line. Split once at module scope. */
+const TITLE_LINES = [
+  { chars: 'LARK'.split('') },
+  { chars: 'STUDIO'.split('') },
+] as const;
+
+/** Which montage shots survive on a phone: a detail, a facade, an
+ *  interior. Indices into `SHOTS`. */
+const MOBILE_SHOTS = new Set([0, 5, 7]);
 
 export function Preloader() {
   const first = useFirstVisit();
@@ -912,7 +927,7 @@ export function Preloader() {
       {running && (
         <Motion.div
           aria-hidden="true"
-          className="no-print fixed inset-0 z-90 overflow-hidden bg-paper"
+          className="no-print fixed inset-x-0 top-0 z-90 h-[100svh] overflow-hidden bg-paper"
           exit={{ clipPath: 'inset(50% 0% 50% 0%)', opacity: 0 }}
           transition={{ duration: 1.05, ease: EASE.quart }}
           style={{ clipPath: 'inset(0% 0% 0% 0%)' }}
@@ -930,7 +945,7 @@ export function Preloader() {
             which is what a title sequence actually feels like.
           */}
           <Motion.div
-            className="absolute inset-0 hidden tablet:block"
+            className="absolute inset-0"
             initial={{ scale: 1.06, x: '1.5%', y: '1%' }}
             animate={{ scale: 1.0, x: '-1.5%', y: '-1%' }}
             transition={{ duration: 6.4, ease: 'linear' }}
@@ -949,7 +964,13 @@ export function Preloader() {
             {SHOTS.map((shot, i) => (
               <Motion.div
                 key={shot.id}
-                className="absolute inset-0"
+                /* MOBILE GETS A CURATED CUT, NOT A COMPRESSED ONE. Below
+                   640px only shots 1, 4 and 7 play — a detail, a facade
+                   and an interior — so the sequence keeps its arc with
+                   three clear beats instead of eight fighting for a
+                   narrow screen. It also drops five full-bleed decodes
+                   on exactly the devices least able to afford them. */
+                className={`absolute inset-0 ${MOBILE_SHOTS.has(i) ? '' : 'hidden tablet:block'}`}
                 style={{ zIndex: i + 1 }}
                 initial={{ clipPath: shot.from, opacity: 0 }}
                 animate={{ clipPath: 'inset(0% 0% 0% 0%)', opacity: 1 }}
@@ -989,7 +1010,7 @@ export function Preloader() {
             {PLATES.map((plate, i) => (
               <Motion.div
                 key={plate.id}
-                className={`absolute overflow-hidden ${plate.box}`}
+                className={`absolute hidden overflow-hidden tablet:block ${plate.box}`}
                 style={{ zIndex: 40 + i }}
                 initial={{ clipPath: 'inset(0% 0% 100% 0%)', opacity: 0 }}
                 animate={{
@@ -1050,7 +1071,7 @@ export function Preloader() {
           <Motion.span
             className="absolute left-5 right-5 top-1/2 z-10 h-px origin-center bg-line-strong tablet:left-7 tablet:right-7"
             initial={{ scaleX: 0, opacity: 0 }}
-            animate={{ scaleX: 1, opacity: [0, 0.8, 0.25, 0.9] }}
+            animate={{ scaleX: 1, opacity: [0, 0.8, 0.25, 0] }}
             transition={{ duration: 5.4, times: [0, 0.12, 0.6, 1], ease: EASE.quart, delay: 0.1 }}
           />
 
@@ -1063,57 +1084,112 @@ export function Preloader() {
             transition={{ duration: 0.9, ease: EASE.quart, delay: 4.95 }}
           />
 
-          {/* PHASE 4 — THE TITLE. Two lines, cut in from opposite sides,
-              tracking closing as they land. */}
-          <div className="absolute inset-x-0 top-1/2 z-20 -translate-y-1/2 px-5 tablet:px-7">
-            <Motion.span
-              className="absolute left-5 top-0 -translate-y-[calc(100%+1.6rem)] tablet:left-7"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: EASE.expo, delay: 5.3 }}
-            >
-              <Image src="/logo.png" alt="" width={200} height={200} unoptimized priority className="h-7 w-7 object-contain" />
-            </Motion.span>
+          {/*
+            PHASE 4 — THE TITLE, RE-COMPOSED.
 
-            <Motion.h1
-              className="mask mt-6 block whitespace-nowrap font-display text-hero leading-none text-ink"
-              initial={{ letterSpacing: '0.4em' }}
-              animate={{ letterSpacing: '-0.02em' }}
-              transition={{ duration: 1.5, ease: EASE.quart, delay: 5.55 }}
-            >
-              {WORDMARK_A.map((c, i) => (
-                <Motion.span
-                  key={`a${String(i)}`}
-                  className="inline-block will-change-transform"
-                  initial={{ y: '120%' }}
-                  animate={{ y: '0%' }}
-                  transition={{ duration: 1, ease: EASE.expo, delay: 5.45 + i * 0.05 }}
-                >
-                  {c}
-                </Motion.span>
-              ))}
-              <span>&nbsp;</span>
-              {WORDMARK_B.map((c, i) => (
-                <Motion.span
-                  key={`b${String(i)}`}
-                  className="inline-block will-change-transform"
-                  initial={{ y: '-120%' }}
-                  animate={{ y: '0%' }}
-                  transition={{ duration: 1, ease: EASE.expo, delay: 5.6 + i * 0.05 }}
-                >
-                  {c}
-                </Motion.span>
-              ))}
-            </Motion.h1>
+            WHAT WAS WRONG. The wordmark was set left-aligned on the
+            datum, at `text-hero`, with each letter sliding in from above
+            or below. Three things made that read as a slide deck rather
+            than as a title card: it sat hard against the left margin so
+            the eye had nowhere to settle; the letters TRAVELLED, which
+            is the most literal move available and the one every
+            presentation template uses; and it arrived at the same weight
+            and size as the hero headline that follows it, so the brand
+            never got a moment of its own.
 
-            <Motion.p
-              className="label mt-6 text-ink-3"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.9, ease: EASE.expo, delay: 6.1 }}
+            WHAT IT DOES NOW. The composition is CENTRED — the montage
+            has just converged to a calm field, and the wordmark resolves
+            out of the middle of it, which is where the eye already is.
+            The letters do not travel. They RESOLVE: each one fades up
+            from zero while the whole line contracts from wide tracking,
+            so the word assembles from spaced-out ghosts into a set line.
+            The stagger runs from the CENTRE outward rather than left to
+            right, so it reads as the name coming into focus rather than
+            as text being written.
+
+            The scale move is 1.06 to 1 across the full reveal — slow
+            enough to be felt rather than seen, and the only thing on the
+            page still moving during the final beat.
+          */}
+          <div className="absolute inset-x-0 top-1/2 z-20 -translate-y-1/2 px-[max(1.5rem,env(safe-area-inset-left))] tablet:px-7">
+            <Motion.div
+              className="flex flex-col items-center text-center"
+              initial={{ scale: 1.06 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 2.6, ease: EASE.expo, delay: 4.9 }}
             >
-              {site.address[1]} — <Figures>{site.founded}</Figures>
-            </Motion.p>
+              <Motion.span
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1.1, ease: EASE.expo, delay: 4.95 }}
+              >
+                <Image
+                  src="/logo.png"
+                  alt=""
+                  width={200}
+                  height={200}
+                  unoptimized
+                  priority
+                  className="h-8 w-8 object-contain tablet:h-9 tablet:w-9"
+                />
+              </Motion.span>
+
+              {/*
+                The tracking closes on the LINE while the letters fade up
+                individually. Two properties, two owners, so neither
+                fights the other — and no letter ever changes position
+                relative to its neighbours, which is what keeps it from
+                looking mechanical.
+              */}
+              <Motion.h1
+                className="mt-6 block font-display text-hero font-medium leading-none text-ink tablet:mt-7"
+                initial={{ letterSpacing: 'var(--overture-track)' }}
+                animate={{ letterSpacing: '-0.015em' }}
+                transition={{ duration: 2.4, ease: EASE.expo, delay: 5.05 }}
+              >
+                {TITLE_LINES.map((line, li) => (
+                  <span key={li} className="block tablet:inline-block">
+                    {line.chars.map((c, i) => (
+                      <Motion.span
+                        key={`${String(li)}-${String(i)}`}
+                        className="inline-block will-change-[opacity]"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{
+                          duration: 1.15,
+                          ease: EASE.expo,
+                          /* Centre-out: the middle letters resolve first
+                             and the sequence spreads to both edges. */
+                          delay: 5.1 + Math.abs(i - (line.chars.length - 1) / 2) * 0.075,
+                        }}
+                      >
+                        {c}
+                      </Motion.span>
+                    ))}
+                    {li === 0 && <span className="hidden tablet:inline">&nbsp;</span>}
+                  </span>
+                ))}
+              </Motion.h1>
+
+              {/* A hairline drawn under the name, from the centre out —
+                  the one element that says "this is the title card". */}
+              <Motion.span
+                aria-hidden="true"
+                className="mt-7 block h-px w-[min(22rem,60vw)] origin-center bg-line-strong"
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                transition={{ duration: 1.5, ease: EASE.quart, delay: 5.7 }}
+              />
+
+              <Motion.p
+                className="label mt-5 text-ink-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1.1, ease: EASE.expo, delay: 5.95 }}
+              >
+                {site.address[1]} — <Figures>{site.founded}</Figures>
+              </Motion.p>
+            </Motion.div>
           </div>
         </Motion.div>
       )}

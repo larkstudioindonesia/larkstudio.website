@@ -642,9 +642,26 @@ function resolveFirstVisit(): boolean {
 export const REPLAY_OVERTURE: boolean = true;
 
 export function useFirstVisit(): boolean {
-  const [first, setFirst] = useState(false);
+  /**
+   * THE FLASH, AND WHY THE INITIAL VALUE MATTERS.
+   *
+   * This used to start `false` and flip true in an effect. With the
+   * overture set to replay, that meant the server rendered no overlay,
+   * the first client paint rendered no overlay, and the overture only
+   * mounted after hydration — so every load showed a frame or two of the
+   * bare landing page before the curtain dropped over it. On a slow
+   * device that is a clearly visible flash of the hero, and it is the
+   * "intro starts twice / flashes" symptom.
+   *
+   * When the overture always replays the answer is knowable at render
+   * time, so it is seeded synchronously and the overlay is present in
+   * the server HTML. Server and client agree, so there is no hydration
+   * mismatch. Only the storage-backed path still needs an effect, since
+   * `sessionStorage` does not exist during prerender.
+   */
+  const [first, setFirst] = useState(REPLAY_OVERTURE);
   useEffect(() => {
-    setFirst(REPLAY_OVERTURE ? true : resolveFirstVisit());
+    if (!REPLAY_OVERTURE) setFirst(resolveFirstVisit());
   }, []);
   return first;
 }
