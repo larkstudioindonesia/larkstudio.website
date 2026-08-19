@@ -59,17 +59,21 @@ export default async function HomePage({
   const locale: Locale = lang;
 
   /**
-   * The hero frame is named in content rather than taken from the top of
-   * the registry: a photograph that is excellent on its own can still be
-   * the wrong thing to set a headline on, and this one was chosen for
-   * what it does UNDER TYPE — dark through the lower two thirds, with
-   * its own signage high and right, away from the headline.
+   * The hero PLATE is its own master (`home.stage.image`) rather than a
+   * frame lifted out of the registry — a photograph that is excellent in
+   * a gallery can still be the wrong thing to set a headline on, and
+   * this one was exported wide specifically for the job.
+   *
+   * What the registry is still consulted for is the CREDIT: the room in
+   * the plate is a real project, and naming it is the difference between
+   * a stock hero and a studio's. `home.stage.bed` holds the frame id, so
+   * reordering the registry cannot silently re-credit the hero.
    */
-  const bed = findImage(home.stage.bed);
+  const credit = findImage(home.stage.bed)?.project;
 
   return (
     <>
-      {bed && <Hero locale={locale} bed={bed} />}
+      {credit && <Hero locale={locale} credit={credit} />}
       <Portfolio projects={projects} locale={locale} />
       <Manifesto locale={locale} />
       <Disciplines locale={locale} />

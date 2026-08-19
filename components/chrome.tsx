@@ -21,18 +21,21 @@ import {
   useInView,
   usePointer,
   useProgress,
+  useReducedMotion,
   useScroll,
   useScrollDirection,
   useScrollLock,
   useScrolled,
   useSpring,
+  useActTwo,
+  useIntro,
   useToggle,
   useTransform,
 } from '@/lib/motion';
-import { LOCALES, type Locale } from '@/content/types';
+import { crop, LOCALES, type Locale } from '@/content/types';
 import { site, ui } from '@/content/site';
 import { LOCALE_LABEL, paths, translatePath, whatsappLink } from '@/lib/site';
-import { Container, Figures, Grid, TextLink } from '@/components/ui';
+import { Container, Figures, Fill, Grid, TextLink } from '@/components/ui';
 
 /**
  * LARK STUDIO — THE SHELL
@@ -233,6 +236,9 @@ function Navigation({ locale, tone = 'default' }: { locale: Locale; tone?: 'defa
  * navigation must never do.
  */
 export function Header({ locale }: { locale: Locale }) {
+  /* ACT II GATE. The header does not animate late — it does not animate
+     at all until the overture has fully left the stage. */
+  const act2 = useActTwo();
   const scrolled = useScrolled(80);
   const direction = useScrollDirection();
   const menu = useToggle(false);
@@ -275,8 +281,8 @@ export function Header({ locale }: { locale: Locale }) {
         <div className="mx-auto flex w-full max-w-structure items-center justify-between px-5 py-4 tablet:px-7 tablet:py-5 desktop:px-8">
           <Motion.div
             initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: EASE.expo, delay: 0.2 }}
+            animate={act2 ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
+            transition={{ duration: 0.8, ease: EASE.expo, delay: 0.15 }}
           >
             <Link
               href={paths.home(locale)}
@@ -312,11 +318,14 @@ export function Header({ locale }: { locale: Locale }) {
             </Link>
           </Motion.div>
 
+          {/* `stage` parks the nav stagger until the overture's aperture
+              is open — otherwise it plays out behind the overlay and the
+              visitor arrives on a header that has already finished. */}
           <Motion.div
             className="hidden items-center gap-8 desktop:flex"
-            variants={stagger(0.06, 0.35)}
+            variants={stagger(0.08, 0.3)}
             initial="hidden"
-            animate="visible"
+            animate={act2 ? 'visible' : 'hidden'}
           >
             <Motion.div variants={fadeUp}>
               <Navigation locale={locale} />
@@ -569,11 +578,37 @@ function StudioClock() {
  * Note what is still absent: no newsletter field, no social icons, no
  * sitemap column, no awards row.
  */
+/** Split once at module scope — the closing wordmark is a constant, and
+ *  re-splitting it on every footer render allocates for nothing. */
+const CLOSING_MARK = 'Lark Studio'.split('');
+
 export function Footer({ locale }: { locale: Locale }) {
   const ref = useRef<HTMLElement>(null);
   const { ref: markRef, inView } = useInView<HTMLDivElement>();
   const progress = useProgress(ref, ['start end', 'end end']);
-  const x = useTransform(progress, [0, 1], ['-4%', '2%']);
+  /**
+   * THE CLOSING FRAME IS BOUND TO SCROLL, not fired once on entry.
+   *
+   * Three values, all driven by the footer's own pass through the
+   * viewport, all resolving together at progress 1 — which is the moment
+   * the page bottoms out. The wordmark is therefore still composing for
+   * as long as the reader is still arriving, and reaches its final
+   * state exactly when they stop. That is the difference between a
+   * closing frame and an animation that happened to finish early.
+   */
+  const markX = useTransform(progress, [0, 1], ['-7%', '0%']);
+  const markTrack = useTransform(progress, [0.1, 0.95], ['0.14em', '-0.03em']);
+  const markScale = useTransform(progress, [0.1, 0.95], [1.05, 1]);
+  /* THE MASK IS SCRUBBED BY SCROLL. The wordmark is not revealed by a
+     trigger firing once — it is uncovered from the bottom up in direct
+     proportion to how far the reader has come, so the last letters clear
+     their mask exactly as the page bottoms out. */
+  const markClip = useTransform(
+    progress,
+    [0.05, 0.8],
+    ['inset(0% 0% 100% 0%)', 'inset(0% 0% 0% 0%)'],
+  );
+  const reduced = useReducedMotion();
 
   return (
     <footer
@@ -617,23 +652,83 @@ export function Footer({ locale }: { locale: Locale }) {
         </Grid>
       </Container>
 
-      {/* The mega token carries its own tight line-height and negative
-          tracking; nothing here overrides them, because the mask's slack
-          is calibrated against those values and a local `leading-*`
-          clips the caps. */}
-      <div ref={markRef} className="mt-11 px-5 tablet:px-7 desktop:px-8">
-        <Motion.div style={{ x }}>
-          <span className="mask block">
-            <Motion.span
-              className="block font-display text-mega text-bone-ink"
-              variants={maskUp}
-              initial="hidden"
-              animate={inView ? 'visible' : 'hidden'}
-            >
-              Lark Studio
-            </Motion.span>
-          </span>
+      {/*
+        THE CLOSING FRAME.
+
+        The whole bottom of the site is composed around this wordmark
+        now, rather than the wordmark being dropped under the footer
+        columns. Three things changed and all three are visible:
+
+        1. IT HAS ROOM. The block sits in its own full-width band with
+           deep air above and below (mt-12 / pb-10), so the name is not
+           competing with the address and the nav list for the same
+           screen. Whitespace is the art direction here — §19.
+        2. IT IS SCROLL-DRIVEN, NOT ONE-SHOT. Tracking, scale and the
+           horizontal drift are all bound to the footer's own scroll
+           progress, so the wordmark keeps resolving for as long as the
+           reader keeps coming. It reaches its final composition exactly
+           as the footer bottoms out — the last frame of the film,
+           arrived at rather than triggered.
+        3. THE LETTERS ARE CUT IN INDIVIDUALLY, each from behind its own
+           mask on a 55ms stagger, with a rule that draws itself across
+           the full measure underneath once the last letter has landed.
+
+        The mega token carries its own tight line-height; nothing here
+        overrides it, because the mask's slack is calibrated against it
+        and a local `leading-*` clips the caps. `whitespace-nowrap` is
+        load-bearing: per-letter `inline-block` spans give the line a
+        break opportunity between EVERY letter, and without it the
+        statement renders as "Lark Stu / dio".
+
+        REDUCED MOTION gets the finished composition — final tracking,
+        final scale, letters up, rule drawn. It lands; it does not
+        perform.
+      */}
+      <div ref={markRef} className="mt-12 overflow-hidden px-5 pb-4 tablet:px-7 desktop:px-8">
+        <Motion.div style={{ x: markX }}>
+          <Motion.span
+            className="mask block whitespace-nowrap font-display text-mega leading-none text-bone-ink"
+            /* Spread rather than a conditional `style` prop:
+               `exactOptionalPropertyTypes` rejects an explicit
+               `undefined` where the prop is merely optional. */
+            {...(reduced === true
+              ? {}
+              : {
+                  style: {
+                    letterSpacing: markTrack,
+                    scale: markScale,
+                    clipPath: markClip,
+                    transformOrigin: 'left bottom',
+                  },
+                })}
+          >
+            {CLOSING_MARK.map((char, i) =>
+              char === ' ' ? (
+                <span key={i}>&nbsp;</span>
+              ) : (
+                <Motion.span
+                  key={i}
+                  className="inline-block will-change-transform"
+                  initial={reduced === true ? false : { y: '118%' }}
+                  animate={inView ? { y: '0%' } : { y: '118%' }}
+                  transition={{ duration: 1.25, ease: EASE.expo, delay: i * 0.055 }}
+                >
+                  {char}
+                </Motion.span>
+              ),
+            )}
+          </Motion.span>
         </Motion.div>
+
+        {/* The rule closes the frame, drawn left to right after the last
+            letter is up. */}
+        <Motion.span
+          aria-hidden="true"
+          className="mt-7 block h-px w-full origin-left bg-bone-line"
+          initial={reduced === true ? false : { scaleX: 0 }}
+          animate={inView ? { scaleX: 1 } : { scaleX: 0 }}
+          transition={{ duration: 1.6, ease: EASE.quart, delay: 0.85 }}
+        />
       </div>
 
       <Container>
@@ -655,100 +750,371 @@ export function Footer({ locale }: { locale: Locale }) {
  * ================================================================== */
 
 /**
- * The curtain. Shown once per browsing session, on first arrival only.
+ * THE OVERTURE — a 5.6-second arrival, shown once per browsing session.
  *
  * WHAT IT IS NOT: a loading screen. It does not wait on the network, it
- * does not gate hydration, and it does not measure anything. The page is
- * fully rendered behind it the entire time, and the counter is honest
- * about being a timer — it is a framing device that lifts after 1.6s.
+ * does not gate hydration, and it measures nothing. The page is fully
+ * rendered behind it the whole time. The previous revision ran 1.6s and
+ * put a 000–100 counter in the corner, which is the one device that
+ * makes a framing sequence read as a progress bar lying about what it
+ * measures — the counter is gone and nothing replaced it.
  *
- * WHY IT IS SAFE: it is `position: fixed` over an already-complete
- * document, so it cannot delay paint of the content beneath, and it is
- * skipped on every subsequent navigation, on reduced motion, and if
- * storage is unavailable. The failure mode in every direction is "no
- * preloader", which is the correct one.
+ * THE SEQUENCE IS BUILT FROM THE VOCABULARY OF A DRAWING, not from the
+ * vocabulary of a loader. There are no spinners, bars, percentages or
+ * particles. There is a datum line, a set of column gridlines, a mark,
+ * a name, and then the drawing opens:
+ *
+ *   0.00  black. The datum — a single hairline — draws out from the
+ *         centre to the full width. An architect's first mark.
+ *   0.90  five vertical gridlines drop from the datum on a stagger,
+ *         the way a column grid is set out from a datum.
+ *   1.50  the monogram fades up on the datum's left.
+ *   2.10  LARK STUDIO rises, letter by letter, from behind the datum.
+ *   3.10  the locality line and the year fade in beneath.
+ *   3.70  the tracking on the wordmark relaxes from wide to normal as
+ *         the gridlines retract — the drawing resolving into a title.
+ *   4.60  APERTURE. A `clip-path` inset opens from the datum outward,
+ *         top and bottom together, and the landing page is simply
+ *         THERE behind it. Not a fade to the site — an opening onto it.
+ *   5.60  the overlay unmounts. The hero's own 2.4s entrance is already
+ *         running underneath by then, so the handover is continuous.
+ *
+ * WHY IT IS SAFE: `position: fixed` over an already-complete document,
+ * so it cannot delay paint of the content beneath; skipped on every
+ * subsequent navigation, on reduced motion, and if storage is
+ * unavailable. The failure mode in every direction is "no overture",
+ * which is the correct one. Scroll is locked for its duration and
+ * released by the same state that unmounts it.
+ *
+ * ESCAPE HATCH: any key, click or touch skips to the aperture. A
+ * visitor who has seen it once and cleared their storage should never
+ * feel held, and 5.6 seconds is long enough that not offering the exit
+ * would be arrogant.
  */
+/* ------------------------------------------------------------------ *
+ * THE OVERTURE — a title sequence cut from the studio's own work
+ * ------------------------------------------------------------------ */
+
+/**
+ * EIGHT SHOTS, FULL BLEED, EACH CUT DIFFERENTLY.
+ *
+ * The previous version put six small rectangles on a black field, all
+ * entering with the same clip and the same scale on the same metronome.
+ * That is a slide deck. Three things make this a film instead:
+ *
+ * 1. THE SHOTS FILL THE FRAME. Every shot is `inset-0`, so the warm
+ *    timber, the green of a garden, the sky over a facade and the light
+ *    off a tiled floor are what the screen actually IS for that beat.
+ *    The colour comes from the architecture — that is the whole answer
+ *    to "too monochromatic", and it is why the shots had to get big.
+ * 2. NO TWO CUTS ARE THE SAME. Six clip geometries — a letterbox slit
+ *    opening, a vertical iris, wipes from each edge, a corner band —
+ *    paired with a different scale/drift per shot. The eye cannot
+ *    predict the next transition, which is the difference between
+ *    rhythm and a metronome.
+ * 3. IT ACCELERATES. Shots 1–2 hold ~1.1s (discovery), 3–5 tighten to
+ *    ~0.62s (build), 6–8 land at ~0.42s (climax). The cuts get faster
+ *    and the moves get bigger, so the sequence arrives somewhere
+ *    instead of merely continuing.
+ *
+ * DEPTH comes from two layers per shot moving at different rates: the
+ * clip is on the outer element, the scale and drift on the inner one,
+ * so the frame and its contents never travel together. No perspective,
+ * no translateZ, no tilt — the architecture is never distorted.
+ */
+type Shot = {
+  slug: string;
+  id: string;
+  /** Opening clip geometry. Every shot ends at `inset(0 0 0 0)`. */
+  from: string;
+  /** Inner scale, start → rest. Kept under 1.14 so nothing softens. */
+  scale: [number, number];
+  /** Inner drift, start → rest. */
+  drift: [string, string];
+  at: number;
+  hold: number;
+};
+
+const SHOTS: readonly Shot[] = [
+  /* PHASE 1 — DISCOVERY. A letterbox slit opens. Slow, curious. */
+  { slug: 'mr-yp-house', id: 'mr-yp-house-05', from: 'inset(47% 0% 47% 0%)', scale: [1.16, 1.02], drift: ['0%', '-2.2%'], at: 0.2, hold: 1.5 },
+  { slug: 'the-prasetyos', id: 'the-prasetyos-03', from: 'inset(0% 46% 0% 46%)', scale: [1.14, 1.02], drift: ['1.8%', '0%'], at: 1.25, hold: 1.35 },
+  /* PHASE 2 — BUILD. Wipes from alternating edges, tightening. */
+  { slug: 'waroeng-andalan', id: 'waroeng-andalan-01', from: 'inset(0% 0% 100% 0%)', scale: [1.12, 1.02], drift: ['0%', '1.8%'], at: 2.2, hold: 1.0 },
+  { slug: 'kintaro-cafe', id: 'kintaro-cafe-02', from: 'inset(0% 100% 0% 0%)', scale: [1.13, 1.02], drift: ['-2%', '0%'], at: 2.85, hold: 0.9 },
+  { slug: 'amadya', id: 'amadya-03', from: 'inset(100% 0% 0% 0%)', scale: [1.11, 1.02], drift: ['0%', '-1.6%'], at: 3.4, hold: 0.85 },
+  /* PHASE 3 — CLIMAX. Fast, confident, bigger moves. */
+  { slug: 'mrs-d-house', id: 'mrs-d-house-02', from: 'inset(0% 0% 0% 100%)', scale: [1.15, 1.02], drift: ['2.2%', '0%'], at: 3.95, hold: 0.72 },
+  { slug: 'atomic-cafe', id: 'atomic-cafe-01', from: 'inset(42% 42% 42% 42%)', scale: [1.18, 1.02], drift: ['0%', '0%'], at: 4.4, hold: 0.68 },
+  { slug: 'ms-ra-house', id: 'ms-ra-house-02', from: 'inset(0% 0% 100% 0%)', scale: [1.13, 1.02], drift: ['0%', '1.4%'], at: 4.8, hold: 0.9 },
+] as const;
+
+/**
+ * THE FOREGROUND PLATE — the depth layer.
+ *
+ * During the build and the climax a second, smaller frame rides over the
+ * full-bleed shot, carrying a different project and moving on its own
+ * clock. Two images at two rates in one composition is what gives the
+ * sequence a midground and a foreground; without it every beat is one
+ * flat plane and the montage reads as a slideshow no matter how the
+ * cuts are timed.
+ */
+const PLATES = [
+  { slug: 'kintaro-cafe', id: 'kintaro-cafe-03', box: 'left-[6vw] top-[14vh] w-[26vw] aspect-[4/5]', at: 2.35, hold: 1.5, y: ['5%', '-5%'] },
+  { slug: 'the-prasetyos', id: 'the-prasetyos-02', box: 'right-[7vw] bottom-[12vh] w-[30vw] aspect-[3/2]', at: 3.5, hold: 1.4, y: ['-4%', '4%'] },
+  { slug: 'waroeng-andalan', id: 'waroeng-andalan-03', box: 'left-[30vw] bottom-[16vh] w-[24vw] aspect-[3/2]', at: 4.5, hold: 1.15, y: ['6%', '-3%'] },
+] as const;
+
+/** The whole sequence. Act II is gated on the exit, not on this. */
+const OVERTURE_MS = 6900;
+
+const WORDMARK_A = 'LARK'.split('');
+const WORDMARK_B = 'STUDIO'.split('');
+
 export function Preloader() {
   const first = useFirstVisit();
+  const reduced = useReducedMotion();
+  const { phase, setPhase } = useIntro();
   const [done, setDone] = useState(false);
-  const [count, setCount] = useState(0);
 
-  useScrollLock(first && !done);
+  const running = first && !done && reduced !== true;
+
+  useScrollLock(running);
 
   useEffect(() => {
-    if (!first) return;
-    const start = performance.now();
-    const span = 1400;
-    let frame = requestAnimationFrame(function tick(now) {
-      const t = Math.min(1, (now - start) / span);
-      /* Eased, so the count decelerates into 100 rather than arriving
-         at a constant rate — a linear counter reads as a progress bar
-         lying about what it measures. */
-      setCount(Math.round((1 - Math.pow(1 - t, 3)) * 100));
-      if (t < 1) frame = requestAnimationFrame(tick);
-    });
-    const timer = window.setTimeout(() => {
+    if (running && phase === 'complete') setPhase('opening');
+  }, [running, phase, setPhase]);
+
+  useEffect(() => {
+    if (!running) return;
+    const finish = () => {
+      setPhase('transitioning');
       setDone(true);
-    }, 1600);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.clearTimeout(timer);
     };
-  }, [first]);
+    const timer = window.setTimeout(finish, OVERTURE_MS);
+    window.addEventListener('keydown', finish, { once: true });
+    window.addEventListener('pointerdown', finish, { once: true });
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('keydown', finish);
+      window.removeEventListener('pointerdown', finish);
+    };
+  }, [running, setPhase]);
 
   return (
-    <AnimatePresence>
-      {first && !done && (
+    <AnimatePresence
+      /* Act II is released by the exit's own completion callback, not by
+         a timer running beside it. No second clock, so no overlap. */
+      onExitComplete={() => {
+        setPhase('complete');
+      }}
+    >
+      {running && (
         <Motion.div
           aria-hidden="true"
-          className="no-print fixed inset-0 z-90 flex flex-col justify-between bg-paper px-5 pb-8 pt-8 tablet:px-7"
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: EASE.expo }}
+          className="no-print fixed inset-0 z-90 overflow-hidden bg-paper"
+          exit={{ clipPath: 'inset(50% 0% 50% 0%)', opacity: 0 }}
+          transition={{ duration: 1.05, ease: EASE.quart }}
+          style={{ clipPath: 'inset(0% 0% 0% 0%)' }}
         >
-          {/* Two panels lifting in sequence, so the reveal reads as a
-              curtain opening rather than as a fade. */}
-          <Motion.span
-            className="absolute inset-x-0 top-0 z-10 h-1/2 origin-top bg-paper"
-            exit={{ scaleY: 0 }}
-            transition={{ duration: 0.9, ease: EASE.quart }}
-          />
-          <Motion.span
-            className="absolute inset-x-0 bottom-0 z-10 h-1/2 origin-bottom bg-paper"
-            exit={{ scaleY: 0 }}
-            transition={{ duration: 0.9, ease: EASE.quart, delay: 0.06 }}
-          />
+          {/*
+            THE CAMERA.
 
-          <Motion.p
-            className="label relative z-20 text-ink-3"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: EASE.expo }}
+            Every shot lives inside this one layer, and this layer never
+            stops moving for the whole sequence: it pushes from 1.06 to
+            1.0 while drifting left and lifting. That is the single most
+            important change from the previous revision. Before, each
+            shot animated in isolation and the frame itself was static,
+            so the eye read "picture, pause, picture, pause". With a
+            continuous camera under them the cuts happen INSIDE a move,
+            which is what a title sequence actually feels like.
+          */}
+          <Motion.div
+            className="absolute inset-0 hidden tablet:block"
+            initial={{ scale: 1.06, x: '1.5%', y: '1%' }}
+            animate={{ scale: 1.0, x: '-1.5%', y: '-1%' }}
+            transition={{ duration: 6.4, ease: 'linear' }}
           >
-            {site.name} — {site.address[1]}
-          </Motion.p>
+            {/*
+              THE MONTAGE — full bleed, so the architecture IS the colour.
 
-          <div className="relative z-20 flex items-end justify-between gap-5">
-            <span className="mask">
-              <Motion.span
-                className="block font-display text-display text-ink"
-                initial={{ y: '110%' }}
-                animate={{ y: '0%' }}
-                transition={{ duration: 1, ease: EASE.expo, delay: 0.1 }}
+              SHOTS DO NOT FADE OUT. Each one opens its clip and then
+              STAYS, and the next shot's clip opens over the top of it.
+              The previous revision closed every clip and dropped opacity
+              back to 0, which put a beat of black between every pair —
+              the exact "one thing at a time" rhythm that reads as a
+              slide deck. Now the screen is never empty after 0.5s and
+              each cut is a genuine transition rather than an appearance.
+            */}
+            {SHOTS.map((shot, i) => (
+              <Motion.div
+                key={shot.id}
+                className="absolute inset-0"
+                style={{ zIndex: i + 1 }}
+                initial={{ clipPath: shot.from, opacity: 0 }}
+                animate={{ clipPath: 'inset(0% 0% 0% 0%)', opacity: 1 }}
+                transition={{
+                  clipPath: { duration: shot.hold, ease: EASE.quart, delay: shot.at },
+                  opacity: { duration: 0.01, delay: shot.at },
+                }}
               >
-                Turning vision into shape
-              </Motion.span>
-            </span>
-            <span className="figures shrink-0 font-text text-label text-ink-2">
-              {String(count).padStart(3, '0')}
-            </span>
-          </div>
+                {/* The plate travels inside its own frame — frame and
+                    contents at different rates is the parallax. */}
+                <Motion.div
+                  className="absolute inset-0"
+                  initial={{ scale: shot.scale[0], y: shot.drift[0] }}
+                  animate={{ scale: shot.scale[1], y: shot.drift[1] }}
+                  transition={{ duration: shot.hold + 2.2, ease: EASE.expo, delay: shot.at }}
+                >
+                  <Fill
+                    src={crop(shot.slug, shot.id, 'landscape')}
+                    alt=""
+                    sizes="100vw"
+                    priority={i < 2}
+                    eager={i < 5}
+                  />
+                </Motion.div>
+                {/* Exposure lifts as the cut lands, so consecutive shots
+                    differ in light as well as in geometry. */}
+                <Motion.div
+                  className="absolute inset-0 bg-paper"
+                  initial={{ opacity: 0.7 }}
+                  animate={{ opacity: 0.06 }}
+                  transition={{ duration: shot.hold * 0.9, ease: EASE.quart, delay: shot.at }}
+                />
+              </Motion.div>
+            ))}
 
+            {/* THE FOREGROUND PLATES — the depth layer. */}
+            {PLATES.map((plate, i) => (
+              <Motion.div
+                key={plate.id}
+                className={`absolute overflow-hidden ${plate.box}`}
+                style={{ zIndex: 40 + i }}
+                initial={{ clipPath: 'inset(0% 0% 100% 0%)', opacity: 0 }}
+                animate={{
+                  clipPath: [
+                    'inset(0% 0% 100% 0%)',
+                    'inset(0% 0% 0% 0%)',
+                    'inset(0% 0% 0% 0%)',
+                    'inset(100% 0% 0% 0%)',
+                  ],
+                  opacity: [0, 1, 1, 0],
+                }}
+                transition={{
+                  duration: plate.hold + 0.9,
+                  times: [0, 0.3, 0.7, 1],
+                  ease: EASE.quart,
+                  delay: plate.at,
+                }}
+              >
+                <Motion.div
+                  className="absolute inset-0"
+                  initial={{ y: plate.y[0], scale: 1.08 }}
+                  animate={{ y: plate.y[1], scale: 1 }}
+                  transition={{ duration: plate.hold + 1.6, ease: EASE.expo, delay: plate.at }}
+                >
+                  <Fill src={crop(plate.slug, plate.id, 'landscape')} alt="" sizes="32vw" eager />
+                </Motion.div>
+              </Motion.div>
+            ))}
+
+            {/*
+              THE COLOUR PROGRESSION.
+
+              A warm grade that is absent through Discovery, arrives with
+              the Build and deepens into the Climax, drawn from the brass
+              accent that is already the studio's one chromatic token. It
+              is multiplied over the architecture rather than added, so it
+              warms the timber and the daylight already in the renders
+              instead of tinting them.
+            */}
+            <Motion.div
+              aria-hidden="true"
+              className="absolute inset-0 z-50 mix-blend-overlay bg-[radial-gradient(130%_100%_at_25%_35%,rgba(200,160,106,0.55),rgba(200,160,106,0)_60%)]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0, 0.5, 0.85, 0.35] }}
+              transition={{ duration: 5.6, times: [0, 0.34, 0.6, 0.84, 1], ease: 'linear' }}
+            />
+            {/* A permanent vignette so the full-bleed shots read as
+                framed cinematography rather than as wallpaper. */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 z-50 bg-[radial-gradient(120%_85%_at_50%_50%,transparent_45%,rgba(11,11,12,0.72))]"
+            />
+          </Motion.div>
+
+          {/* THE DATUM. Drawn once at the start, and it is the line the
+              wordmark later sits on — the only element that survives the
+              whole sequence. */}
           <Motion.span
-            className="relative z-20 mt-5 h-px w-full origin-left bg-line-strong"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 1.5, ease: EASE.quart }}
+            className="absolute left-5 right-5 top-1/2 z-10 h-px origin-center bg-line-strong tablet:left-7 tablet:right-7"
+            initial={{ scaleX: 0, opacity: 0 }}
+            animate={{ scaleX: 1, opacity: [0, 0.8, 0.25, 0.9] }}
+            transition={{ duration: 5.4, times: [0, 0.12, 0.6, 1], ease: EASE.quart, delay: 0.1 }}
           />
+
+          {/* THE CONVERGENCE. A paper field closes over the last shot so
+              the montage resolves rather than simply stopping. */}
+          <Motion.div
+            className="absolute inset-0 z-10 bg-[radial-gradient(120%_90%_at_20%_60%,rgba(200,160,106,0.16),rgba(11,11,12,1)_62%)]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.9, ease: EASE.quart, delay: 4.95 }}
+          />
+
+          {/* PHASE 4 — THE TITLE. Two lines, cut in from opposite sides,
+              tracking closing as they land. */}
+          <div className="absolute inset-x-0 top-1/2 z-20 -translate-y-1/2 px-5 tablet:px-7">
+            <Motion.span
+              className="absolute left-5 top-0 -translate-y-[calc(100%+1.6rem)] tablet:left-7"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: EASE.expo, delay: 5.3 }}
+            >
+              <Image src="/logo.png" alt="" width={200} height={200} unoptimized priority className="h-7 w-7 object-contain" />
+            </Motion.span>
+
+            <Motion.h1
+              className="mask mt-6 block whitespace-nowrap font-display text-hero leading-none text-ink"
+              initial={{ letterSpacing: '0.4em' }}
+              animate={{ letterSpacing: '-0.02em' }}
+              transition={{ duration: 1.5, ease: EASE.quart, delay: 5.55 }}
+            >
+              {WORDMARK_A.map((c, i) => (
+                <Motion.span
+                  key={`a${String(i)}`}
+                  className="inline-block will-change-transform"
+                  initial={{ y: '120%' }}
+                  animate={{ y: '0%' }}
+                  transition={{ duration: 1, ease: EASE.expo, delay: 5.45 + i * 0.05 }}
+                >
+                  {c}
+                </Motion.span>
+              ))}
+              <span>&nbsp;</span>
+              {WORDMARK_B.map((c, i) => (
+                <Motion.span
+                  key={`b${String(i)}`}
+                  className="inline-block will-change-transform"
+                  initial={{ y: '-120%' }}
+                  animate={{ y: '0%' }}
+                  transition={{ duration: 1, ease: EASE.expo, delay: 5.6 + i * 0.05 }}
+                >
+                  {c}
+                </Motion.span>
+              ))}
+            </Motion.h1>
+
+            <Motion.p
+              className="label mt-6 text-ink-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.9, ease: EASE.expo, delay: 6.1 }}
+            >
+              {site.address[1]} — <Figures>{site.founded}</Figures>
+            </Motion.p>
+          </div>
         </Motion.div>
       )}
     </AnimatePresence>

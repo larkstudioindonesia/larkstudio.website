@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inter, Instrument_Serif } from 'next/font/google';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/content/types';
 import { site } from '@/content/site';
 
@@ -15,33 +14,13 @@ import { site } from '@/content/site';
  * Type
  * ------------------------------------------------------------------ */
 
-/**
- * A high-contrast editorial serif for display, a neutral grotesque for
- * everything else. The previous pairing (Montserrat over Manrope) was
- * two grotesques doing the same job at different sizes, which is why
- * nothing on the page read as a headline rather than as large body
- * copy — the contrast has to come from the letterforms, not the scale.
- *
- * Instrument Serif ships one weight on purpose. Display type at 6rem
- * does not want a bold; it wants the right shapes.
+/*
+ * NO WEBFONT IS LOADED. Both tiers are Helvetica, declared as a system
+ * stack in `--font-helvetica` in `app/globals.css`; `font-display` and
+ * `font-text` both resolve to it. There is nothing for `next/font` to
+ * host and no `--font-*` class for the `<html>` element to carry, so
+ * the loaders and the `fontVariables` export that fed them are gone.
  */
-const display = Instrument_Serif({
-  subsets: ['latin'],
-  weight: '400',
-  style: ['normal', 'italic'],
-  variable: '--font-display',
-  display: 'swap',
-  fallback: ['Georgia', 'Times New Roman', 'serif'],
-});
-
-const text = Inter({
-  subsets: ['latin'],
-  variable: '--font-text',
-  display: 'swap',
-  fallback: ['Helvetica Neue', 'Arial', 'sans-serif'],
-});
-
-export const fontVariables = `${display.variable} ${text.variable}`;
 
 /* ------------------------------------------------------------------ *
  * Locale

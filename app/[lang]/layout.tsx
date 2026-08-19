@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import '@/app/globals.css';
 
-import { fontVariables, isLocale, organisationJsonLd } from '@/lib/site';
+import { isLocale, organisationJsonLd } from '@/lib/site';
 import { MotionProvider } from '@/lib/motion';
 import { LOCALES, type Locale } from '@/content/types';
 import { site, ui } from '@/content/site';
@@ -53,7 +53,7 @@ export default async function LocaleLayout({
   const locale: Locale = lang;
 
   return (
-    <html lang={locale} className={fontVariables}>
+    <html lang={locale}>
       <body className="flex min-h-screen flex-col bg-paper font-text text-ink">
         <script
           type="application/ld+json"

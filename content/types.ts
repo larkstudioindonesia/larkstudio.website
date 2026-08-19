@@ -31,26 +31,33 @@ export type Localized<T> = { readonly [L in Locale]: T };
  *   wide    the contained plate, up to the container width
  *   detail  a half-width plate, for the documentary frames
  *
- * WEIGHT CONTROLS PLACEMENT, NOT FILE SIZE — and the distinction is the
- * fix for a real bug. A previous pass also capped the exported width of
- * soft masters, some as low as 1200px, reasoning that a low-detail render
- * should not ship large. That made the frame blurrier, not sharper: a
- * 1200px file shown in a 1300px CSS box on a 2x display is upscaled 2.1x
- * by the browser. Softness in the master is a fact about the master; the
- * exported file should be as good as the master allows, and the layout
- * decides how big to draw it.
+ * WEIGHT CONTROLS PLACEMENT AND NOTHING ELSE. It used to control the
+ * export width too, through a `WEIGHT_WIDTH` map that shipped `lead` at
+ * 2560, `wide` at 2160 and `detail` at 1800 — and that map is why this
+ * site looked soft. A `detail` plate drawn 1300px wide on a 2x display
+ * needs 2600 real pixels and was handed 1800; the same plate on a phone
+ * got the portrait crop, which a further 0.583 factor had taken down to
+ * 1049px. Both were then re-encoded by the optimiser, so the visitor saw
+ * a downscale of a downscale.
  *
- * These widths are therefore a ceiling on what the browser may request —
- * see the `sizes` note in `Frame` — and the export floor. Every frame now
- * ships at or above 1800px.
+ * The map is gone. Softness in a master is a fact about that master, and
+ * throwing away pixels the master does have cannot improve it. THE
+ * EXPORT CONTRACT IS NOW A PROPERTY OF THE CROP, NOT THE WEIGHT, and
+ * `images-2` clears it on every axis:
+ *
+ *   3x2  4200x2800 on the full-bleed plates, 2700x1800 elsewhere
+ *   4x5  3220x4025 on the full-bleed plates, 2448x3060 elsewhere
+ *
+ * Both crops grew. The 4:5 masters were 2048x2560 and are now 2448x3060,
+ * which covers a 639 CSS px viewport at 3 DPR (1917px) outright instead
+ * of meeting it exactly; the 3:2 leads were 3840x2560 and are now
+ * 4200x2800, which is why `deviceSizes` gained a 4096 candidate.
+ *
+ * Nothing caps what the browser may ask for. The optimiser clamps to the
+ * master on its own: request 4096 from a 2700px file and it returns
+ * 2700, never an upscale.
  */
 export type Weight = 'lead' | 'wide' | 'detail';
-
-export const WEIGHT_WIDTH: Record<Weight, number> = {
-  lead: 2560,
-  wide: 2160,
-  detail: 1800,
-};
 
 /**
  * The two crops every photograph ships in, composed around the frame's
@@ -58,12 +65,12 @@ export const WEIGHT_WIDTH: Record<Weight, number> = {
  * architecture becomes beheaded architecture on a phone.
  */
 export const CROP = {
-  landscape: { suffix: '3x2', ratio: '3 / 2', scale: 1 },
-  portrait: { suffix: '4x5', ratio: '4 / 5', scale: 0.583 },
+  landscape: { suffix: '3x2', ratio: '3 / 2' },
+  portrait: { suffix: '4x5', ratio: '4 / 5' },
 } as const;
 
 export interface ProjectImage {
-  /** Also the file stem: `amadya-01` → `/images/projects/amadya/amadya-01-3x2.jpg` */
+  /** Also the file stem: `amadya-01` → `/images-2/projects/amadya/amadya-01-3x2.jpg` */
   readonly id: string;
   readonly weight: Weight;
   /**
@@ -100,8 +107,17 @@ export interface Passage {
   readonly body: Localized<string>;
 }
 
+/**
+ * THE ONE PLACE A PROJECT PHOTOGRAPH'S PATH IS BUILT.
+ *
+ * Every plate on the site — portfolio panel, project cover, gallery
+ * frame, related-project card, discipline preview — resolves through
+ * here, which is what made the move from `/images` to `/images-2` a
+ * one-line migration rather than a sweep. `/public/images` is still on
+ * disk and is no longer referenced by anything.
+ */
 export function crop(slug: string, id: string, which: keyof typeof CROP): string {
-  return `/images/projects/${slug}/${id}-${CROP[which].suffix}.jpg`;
+  return `/images-2/projects/${slug}/${id}-${CROP[which].suffix}.jpg`;
 }
 
 /** `50% 46%` — ready for CSS `object-position`. */

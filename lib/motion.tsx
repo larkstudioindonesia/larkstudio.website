@@ -51,7 +51,9 @@ import {
   type Variants,
 } from 'framer-motion';
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -496,7 +498,10 @@ export function useCursorLabel(): string | null {
  * settle on arrival, and vertical parallax. Both keep the page alive
  * without ever putting the architecture on an angle.
  */
-export const SETTLE = 1.06;
+/* The arrival over-size. At 1.06 every plate spent its first 1.6s
+ * showing 94% of the frame; at 1.02 the settle still reads as movement
+ * and the composition stays effectively intact throughout. */
+export const SETTLE = 1.02;
 
 /* ================================================================== *
  * DOCUMENT
@@ -589,26 +594,83 @@ export function useEscape(active: boolean, onEscape: () => void): void {
  * an obstacle on every navigation after it; `sessionStorage` survives
  * client-side routing and a refresh, and resets when the tab closes.
  */
+/**
+ * Resolved ONCE per document and cached at module scope.
+ *
+ * This used to read and write `sessionStorage` inside the hook, which
+ * made it single-consumer by accident: the first component to mount
+ * claimed the flag and every later caller was told it was a repeat
+ * visit. That was invisible while the overture was the only consumer.
+ * It stops being invisible the moment anything else needs to know
+ * whether the overture is running — see `useStageDelay`.
+ */
+let firstVisit: boolean | null = null;
+
+function resolveFirstVisit(): boolean {
+  if (firstVisit !== null) return firstVisit;
+  try {
+    const unseen = window.sessionStorage.getItem('lark-visited') === null;
+    if (unseen) window.sessionStorage.setItem('lark-visited', '1');
+    firstVisit = unseen;
+  } catch {
+    /* Private mode and blocked storage both land here. Never showing the
+       overture is a smaller cost than showing it every time. */
+    firstVisit = false;
+  }
+  return firstVisit;
+}
+
+/**
+ * REPLAY_OVERTURE — the single switch that decides whether the opening
+ * sequence is shown once per session or on every single load.
+ *
+ * It is `true`, which means EVERY REFRESH PLAYS THE INTRO. That is
+ * deliberate and it is the current requirement: an opening sequence
+ * gated behind `sessionStorage` is invisible to the person building the
+ * site, because the second page load they ever do is the last time they
+ * see it. "The code exists" and "the visitor sees it" are different
+ * claims, and only the second one matters.
+ *
+ * Flip this to `false` to restore once-per-session behaviour for
+ * production. Nothing else has to change: `useFirstVisit` keeps its
+ * storage logic and simply stops being consulted.
+ */
+/* Annotated `: boolean` rather than left to inference. A bare `= true`
+   narrows to the literal type `true`, and the ternary below then reads
+   as a constant condition that lint rejects — which would make the
+   switch impossible to flip without also editing its use site. */
+export const REPLAY_OVERTURE: boolean = true;
+
 export function useFirstVisit(): boolean {
   const [first, setFirst] = useState(false);
-  const resolved = useRef(false);
-
   useEffect(() => {
-    if (resolved.current) return;
-    resolved.current = true;
-    try {
-      if (window.sessionStorage.getItem('lark-visited') === null) {
-        window.sessionStorage.setItem('lark-visited', '1');
-        setFirst(true);
-      }
-    } catch {
-      /* Private mode and blocked storage both land here. Never showing
-         the preloader is a smaller cost than showing it every time. */
-    }
+    setFirst(REPLAY_OVERTURE ? true : resolveFirstVisit());
   }, []);
-
   return first;
 }
+
+/**
+ * THE STAGE CLOCK — how long the landing page waits before it performs.
+ *
+ * The overture holds a fixed overlay for 5.6s, and the aperture that
+ * uncovers the page starts opening at 4.6s. Without this, every
+ * first-paint entrance on the site — the header stagger, the hero's
+ * nine-cue score — ran on its own clock from mount, which means it ran
+ * to completion BEHIND the overlay and the visitor arrived on a page
+ * that had already finished animating. The intro would have ended in
+ * exactly the hard cut the whole sequence exists to avoid.
+ *
+ * Adding this to an entrance delay parks it until the aperture is open,
+ * so the page performs INTO the opening rather than behind it. 4.8s sits
+ * just after the aperture starts moving, which is what makes the two
+ * read as one continuous camera move instead of two events.
+ *
+ * Returns 0 on every repeat visit and under reduced motion, where there
+ * is no overture to wait for.
+ */
+/* `OVERTURE_HOLD` / `useStageDelay` are gone. They implemented Act II
+   as a DELAYED animation rather than a GATED one, which is what let the
+   opening and the landing page run over each other. Use `useActTwo()`. */
 
 /**
  * True when the viewport matches. Used by exactly one thing: the
@@ -752,11 +814,77 @@ function SmoothScroll({ children }: { children: ReactNode }) {
  * and SmoothScroll declining to mount, a reduced-motion visitor gets a
  * completely static site with every word and image in place.
  */
+/* ================================================================== *
+ * THE INTRO STATE MACHINE
+ * ================================================================== */
+
+/**
+ * TWO ACTS, AND THEY MUST NEVER SHARE THE STAGE.
+ *
+ * The previous revision handled this with a DELAY: master-page entrances
+ * kept their own clocks and simply started later. That is not the same
+ * thing, and the difference is exactly what went wrong. A delayed
+ * animation is still running — it just runs where nobody can see it, and
+ * any drift between the two clocks (a slow image decode, a dropped
+ * frame, a device that throttles timers) puts the hero mid-settle at the
+ * moment the overlay lifts. The two acts visibly collided.
+ *
+ * This replaces the delay with a GATE. The overture owns a three-state
+ * lifecycle, and Act II is not late — it has not begun:
+ *
+ *   opening        the montage and the brand reveal. Master-page
+ *                  entrance variants are pinned to `hidden`.
+ *   transitioning  the overture's exit wipe is playing.
+ *   complete       the overlay is gone. ONLY NOW do master-page
+ *                  entrances animate, from their own t=0.
+ *
+ * `useActTwo()` is what every master-page entrance reads. It returns
+ * false until the curtain is fully clear, so an entrance cannot start
+ * early no matter how the timings drift — there is no timing to drift.
+ * On a repeat load with the overture disabled, or under reduced motion,
+ * it returns true immediately and the page behaves as if there were
+ * never an intro at all.
+ */
+export type IntroPhase = 'opening' | 'transitioning' | 'complete';
+
+const IntroContext = createContext<{
+  phase: IntroPhase;
+  setPhase: (phase: IntroPhase) => void;
+}>({ phase: 'complete', setPhase: () => undefined });
+
+function IntroProvider({ children }: { children: ReactNode }) {
+  const reduced = useReducedMotion();
+  /* Starts `complete` on the server and for reduced motion, so nothing
+     is ever gated behind an overture that will not play. The overture
+     itself moves it to `opening` on mount when it decides to run. */
+  const [phase, setPhase] = useState<IntroPhase>('complete');
+
+  useEffect(() => {
+    if (reduced === true) setPhase('complete');
+  }, [reduced]);
+
+  return (
+    <IntroContext.Provider value={{ phase, setPhase }}>{children}</IntroContext.Provider>
+  );
+}
+
+export function useIntro() {
+  return useContext(IntroContext);
+}
+
+/** True once the overture has fully left. The single condition every
+ *  master-page entrance animation is allowed to depend on. */
+export function useActTwo(): boolean {
+  return useContext(IntroContext).phase === 'complete';
+}
+
 export function MotionProvider({ children }: { children: ReactNode }) {
   return (
     <LazyMotion features={domAnimation} strict>
       <MotionConfig reducedMotion="user">
-        <SmoothScroll>{children}</SmoothScroll>
+        <IntroProvider>
+          <SmoothScroll>{children}</SmoothScroll>
+        </IntroProvider>
       </MotionConfig>
     </LazyMotion>
   );

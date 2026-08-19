@@ -102,18 +102,23 @@
   /* ---------------------------------------------------------------
      TYPE
 
-     A high-contrast editorial serif for display, a neutral grotesque
-     for everything else. The contrast comes from the letterforms, not
-     from the size — two grotesques at different scales is why the
-     previous revision read as large body copy rather than as headlines.
+     One family throughout: Helvetica. Display and text are the same
+     stack, so the two tiers separate on size, weight and measure alone
+     — there is no letterform contrast to lean on any more, which is
+     why the display sizes carry the tighter tracking below.
+
+     No webfont is loaded. Helvetica is resident on macOS/iOS, Arial
+     stands in on Windows and Android, and Helvetica Neue is listed
+     first for the older Apple machines that only carry that cut.
 
      The display tier is fluid. Discrete display type is the tell of a
      templated site: correct at three widths and slightly wrong at every
      other one. Reading sizes stay discrete — body copy wants a stable
      measure, not a size that drifts under the reader.
      --------------------------------------------------------------- */
-  --font-display: var(--font-display-family), Georgia, 'Times New Roman', serif;
-  --font-text: var(--font-text-family), 'Helvetica Neue', Arial, sans-serif;
+  --font-helvetica: 'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', sans-serif;
+  --font-display: var(--font-helvetica);
+  --font-text: var(--font-helvetica);
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -145,16 +150,33 @@
   --text-display--line-height: 0.98;
   --text-display--letter-spacing: -0.02em;
 
-  /* Capped by the longest real headline, not by how large the type
-     could be: three lines of Bahasa plus a subhead and an action has to
-     fit a 900px viewport on a bottom-aligned hero. */
-  --text-hero: clamp(3rem, 0.8rem + 9vw, 7.5rem);
-  --text-hero--line-height: 0.94;
+  /* Capped by the COLUMN, not by the viewport. The hero headline no
+     longer runs the width of the container — it sits in the blank third
+     of the photograph, held to 15ch — so the old 7.5rem cap produced a
+     120px line in a 475px space and broke after two or three characters.
+     4.75rem puts the longest visual line at roughly 6em, which is what
+     that column holds. Leading opens slightly to 0.98 because the line
+     now wraps: 0.94 was set for two authored lines and collides on
+     three. */
+  --text-hero: clamp(2.5rem, 1rem + 4.4vw, 4.75rem);
+  --text-hero--line-height: 0.98;
   --text-hero--letter-spacing: -0.025em;
 
   /* The footer wordmark and nothing else. Runs to the container edge at
-     every width, which is the whole point of it. */
-  --text-mega: clamp(3.5rem, -1rem + 27vw, 22rem);
+     every width, which is the whole point of it.
+
+     RESIZED FOR HELVETICA. The 27vw / 22rem setting was measured against
+     Instrument Serif, and a grotesque is far wider at the same size:
+     "Lark Studio" set in Helvetica at the old cap needs about 1940px of
+     line and a 1512px viewport offers 1416px, so the wordmark overflowed
+     and broke. 16.5vw / 18rem is the largest setting where the string
+     still fits its container from 360px up. */
+  /* 19vw, NOT 21vw — the ceiling is set by the SCALE, not the type.
+     The closing frame scrubs scale from 1.05 down to 1, so the widest
+     the line is ever drawn is 1.05x its rest width. At 21vw that pushed
+     the final "o" past the container and `overflow-hidden` clipped it.
+     19vw x 1.05 lands just inside the measure at every width. */
+  --text-mega: clamp(3rem, -0.5rem + 19vw, 20rem);
   --text-mega--line-height: 0.86;
   --text-mega--letter-spacing: -0.03em;
 

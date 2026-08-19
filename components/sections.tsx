@@ -11,6 +11,7 @@ import {
   usePointer,
   useProgress,
   useReducedMotion,
+  useActTwo,
   useSpring,
   useTransform,
 } from '@/lib/motion';
@@ -72,56 +73,102 @@ import {
  * ================================================================== */
 
 /**
- * One building, one line.
+ * One room, one line — composed around the photograph rather than laid
+ * on top of it.
  *
- * A single lead photograph at full bleed, the headline set across two
- * lines — upright serif, then an indented italic — and a credit for the
- * frame in the opposite corner. That credit is the small move that makes
- * the difference between a stock hero and a studio's hero: the first
- * thing on the page is not a slogan over a picture, it is a named
- * building.
+ * THE PLATE DECIDES THE LAYOUT, and this is the whole of the section.
+ * `home-hero.jpg` is an upper landing shot square down its axis: the
+ * subject occupies a band from roughly 33% to 78% of the width — sliding
+ * door, garden beyond, the desk, the wardrobe joinery — and everything
+ * left of 30% is an unbroken pale wall running from the ceiling down to
+ * the balustrade. The type goes on that wall. Nothing the studio built
+ * has type over it.
  *
- * THE BACKGROUND MOVES, AND IT NEVER STOPS MOVING.
+ * That is a change of kind from the previous revision, which stacked
+ * headline, subhead, action and metadata in one block across the bottom
+ * of the frame and lit the whole lower two thirds with a paper gradient
+ * to make them legible. On a dark plate that was merely heavy. On this
+ * one it would have been fatal: the lower two thirds is where the floor
+ * reflections, the chair and the whole garden view are, and a 72%-tall
+ * scrim over a high-key interior does not read as atmosphere, it reads
+ * as fog.
  *
- * A previous revision animated the type over a photograph that settled
- * once and then sat still, which is the exact failure the whole section
- * exists to avoid: it read as a website with a picture on it. There are
- * now three layers behind the type, each owning exactly one job, nested
- * so that no two of them ever write the same property:
+ * So the light is now DIRECTIONAL, and it is aimed at the wall:
  *
- *   SCROLL     the outer layer. Trails the page by 14% and pushes in to
- *              1.10 as the hero leaves, while the type moves the other
- *              way and twice as fast. Different rates in opposite
- *              directions is the whole of the depth effect.
- *   ENTRANCE   the middle layer. Opens a clip and settles from 1.12 over
+ *   left    the type scrim. Full strength at the edge, gone by 68%.
+ *           It darkens the blank wall and stops before the door.
+ *   bottom  a 30% band under the metadata rail, down from 72%.
+ *   top     an 18% band so the fixed header stays readable.
+ *   flat    a resting wash across everything, cut from 0.35 to 0.14 —
+ *           the frame is bright enough to carry light type once the
+ *           directional scrims are doing the real work, and every point
+ *           of flat wash is contrast thrown away for nothing.
+ *
+ * THE PHONE DOES NOT GET A CENTRE-CROP. There is no 4:5 sibling for this
+ * master, and covering a 0.46:1 phone viewport from a 1.578:1 plate
+ * shows 29% of its width — the door and nothing else. Below 640px the
+ * photograph is therefore a band across the top 56dvh, which is a 0.75:1
+ * window holding 47% of the plate (the door, the garden and the desk),
+ * and the type sits below it on clean paper with no scrim at all.
+ *
+ * `sizes` COMPENSATES FOR THE CROP, which is the one thing about this
+ * component that will look wrong and is not. A hint of `100vw` describes
+ * the ELEMENT, and when the element is showing 47% of the plate's width
+ * the browser asks for less than half the pixels the visible part needs
+ * and gets a soft image on the sharpest screen in the room. The phone
+ * hint is `210vw` for that reason: 1/0.47.
+ *
+ * THE BACKGROUND MOVES, AND IT NEVER STOPS MOVING. Three layers, each
+ * owning exactly one job, nested so no two ever write the same property:
+ *
+ *   SCROLL     the outer layer. Trails the page by 5% and pushes in to
+ *              1.02 as the hero leaves, while the type moves the other
+ *              way and several times as fast. Different rates in
+ *              opposite directions is the whole of the depth effect —
+ *              and the type may travel freely, because moving type
+ *              costs no photograph.
+ *   ENTRANCE   the middle layer. Opens a clip and settles from 1.02 over
  *              2.4s, once.
- *   DRIFT      the inner layer. A 26-second breath — 3% of scale and
+ *   DRIFT      the inner layer. A 26-second breath — 2% of scale and
  *              under 1% of translate — that mirrors forever.
  *
- * The drift is deliberately slower and smaller than a Ken Burns pan by
- * an order of magnitude. At this rate no one watches it happen; they
- * notice, a few seconds apart, that the frame is not where it was. That
- * is a camera breathing, and it is the difference between a still and a
- * held shot.
+ * The scales compound, and they are budgeted so that they cannot cost
+ * detail: 1.02 x 1.02 is 1.04 at the worst instant, so a 1440px viewport
+ * at 2x needs 2995 real pixels against a 4000px master and a 4096
+ * candidate. The drift is slower and smaller than a Ken Burns pan by an
+ * order of magnitude. At this rate no one watches it happen; they
+ * notice, a few seconds apart, that the frame is not where it was.
  */
-export function Hero({
-  locale,
-  bed,
-}: {
-  locale: Locale;
-  bed: { project: Project; image: ProjectImage };
-}) {
+export function Hero({ locale, credit }: { locale: Locale; credit: Project }) {
   const section = useRef<HTMLElement>(null);
   const reduced = useReducedMotion();
+  /* ACT II GATE. Every cue below is held at its hidden state until the
+     overture has fully left — not delayed, held. See `useActTwo`. */
+  const act2 = useActTwo();
   const progress = useProgress(section, ['start start', 'end start']);
 
   /* Foreground and background pull apart as the hero leaves. */
   const opacity = useTransform(progress, [0, 0.7], [1, 0]);
-  const bedY = useTransform(progress, [0, 1], ['0%', '14%']);
-  const bedScale = useTransform(progress, [0, 1], [1, 1.1]);
+  /**
+   * PARALLAX IS PAID FOR IN COMPOSITION, AND THE PRICE WAS TOO HIGH.
+   *
+   * The bed has to be taller than the viewport or translating it exposes
+   * a band of empty page. But the overhang is not free: it is the part
+   * of the photograph that is scrolled past rather than seen. At 14%
+   * travel over a 16% overhang the hero showed 56% of the render — a
+   * visitor never saw the ceiling or the floor of the room, on the one
+   * image the studio leads with.
+   *
+   * 5% travel over a 5% overhang keeps the parallax legible as movement
+   * and returns the composition. The render is the product; the drift is
+   * decoration on top of it.
+   */
+  const bedY = useTransform(progress, [0, 1], ['0%', '9%']);
+  const bedScale = useTransform(progress, [0, 1], [1, 1.05]);
   const typeY = useTransform(progress, [0, 1], ['0%', '-28%']);
-  /* The light going back down as the reader leaves for the work. */
-  const washOpacity = useTransform(progress, [0, 1], [0.35, 0.62]);
+  /* The light going back down as the reader leaves for the work. Rests
+     at 0.14 rather than 0.35: see the note on directional light above. */
+  const washOpacity = useTransform(progress, [0, 1], [0.14, 0.5]);
 
   const [line1, line2] = home.heroLines[locale];
 
@@ -134,7 +181,7 @@ export function Hero({
    * then does the studio start speaking. Reversing any two of these makes
    * it a website with a picture on it.
    *
-   *   0.00  image begins settling from 1.12 and the wash begins lifting
+   *   0.00  image begins settling from 1.02 and the wash begins lifting
    *   0.55  headline, per character
    *   1.25  subhead
    *   1.40  call to action
@@ -146,125 +193,210 @@ export function Hero({
    * The header runs 0.20–0.50 on its own clock in `chrome.tsx`, because
    * it persists across client navigations and must not replay.
    */
-  const CUE = { head: 0.55, sub: 1.25, cta: 1.4, meta: 1.55, hint: 1.8 };
+  /* Every cue is offset by the stage clock, so on a first visit the
+     whole score is parked until the overture's aperture is opening and
+     the page performs INTO it. On a repeat visit `stage` is 0 and the
+     timings below are exactly as written. */
+  const CUE = { head: 0.5, sub: 1.15, cta: 1.35, meta: 1.55, hint: 1.85 };
 
   return (
-    <section ref={section} className="relative min-h-dvh overflow-hidden">
-      {/* SCROLL. The slack is what makes a 14% translate safe: without
-          it the layer is exactly viewport-sized and moving it exposes a
-          band of empty page along one edge for the whole pass. */}
-      <Motion.div
-        className="absolute -inset-y-[16%] inset-x-0"
-        style={{ y: bedY, scale: bedScale }}
-      >
-        {/* ENTRANCE */}
+    <section ref={section} className="relative flex min-h-dvh flex-col overflow-hidden">
+      {/*
+        THE PLATE. A band across the top on a phone, the whole viewport
+        from 640px up — one element, two sizing models, because the crop
+        a phone would otherwise take is not survivable. See the note on
+        the component.
+      */}
+      <div className="relative h-[56dvh] w-full shrink-0 overflow-hidden tablet:absolute tablet:inset-0 tablet:h-auto">
+        {/* SCROLL. The slack is what makes the translate safe: without it
+            the layer is exactly viewport-sized and moving it exposes a
+            band of empty page along one edge for the whole pass. Overhang
+            and travel are kept equal and small — every extra percent of
+            overhang is a percent of the render nobody ever sees. */}
         <Motion.div
-          className="absolute inset-0"
-          initial={{ clipPath: 'inset(12% 0% 12% 0%)', scale: 1.12 }}
-          animate={{ clipPath: 'inset(0% 0% 0% 0%)', scale: 1 }}
-          transition={{ duration: 2.4, ease: EASE.expo }}
+          className="absolute -inset-y-[9%] inset-x-0"
+          style={{ y: bedY, scale: bedScale }}
         >
-          {/* DRIFT */}
+          {/* ENTRANCE */}
           <Motion.div
             className="absolute inset-0"
-            {...(reduced === true
-              ? {}
-              : {
-                  animate: { scale: [1, 1.03, 1], x: ['0%', '-0.9%', '0%'], y: ['0%', '0.6%', '0%'] },
-                  transition: {
-                    duration: 26,
-                    ease: 'easeInOut' as const,
-                    repeat: Infinity,
-                    /* The entrance owns the first 2.4s; the drift starts
-                       from the value the entrance lands on, so the
-                       handover is invisible. */
-                    delay: 2.4,
-                  },
-                })}
+            initial={{ clipPath: 'inset(6% 0% 6% 0%)', scale: 1.045 }}
+            animate={
+              act2
+                ? { clipPath: 'inset(0% 0% 0% 0%)', scale: 1 }
+                : { clipPath: 'inset(6% 0% 6% 0%)', scale: 1.045 }
+            }
+            transition={{ duration: 2.8, ease: EASE.expo }}
           >
-            <Fill
-              src={crop(bed.project.slug, bed.image.id, 'landscape')}
-              portrait={crop(bed.project.slug, bed.image.id, 'portrait')}
-              alt=""
-              sizes="100vw"
-              focal={bed.image.focal}
-              priority
-            />
+            {/* DRIFT */}
+            <Motion.div
+              className="absolute inset-0"
+              {...(reduced === true || !act2
+                ? {}
+                : {
+                    animate: {
+                      scale: [1, 1.04, 1],
+                      x: ['0%', '-1.6%', '0%'],
+                      y: ['0%', '1.1%', '0%'],
+                    },
+                    transition: {
+                      duration: 16,
+                      ease: 'easeInOut' as const,
+                      repeat: Infinity,
+                      /* The entrance owns the first 2.4s; the drift starts
+                         from the value the entrance lands on, so the
+                         handover is invisible. */
+                      delay: 2.8,
+                    },
+                  })}
+            >
+              <Fill
+                src={home.stage.image}
+                alt=""
+                /* 210vw below the breakpoint is the crop compensation,
+                   not a typo — the band shows 47% of the plate's width,
+                   so a `100vw` hint would under-request by half. */
+                sizes="(max-width: 639px) 210vw, 100vw"
+                focal={home.stage.focal}
+                priority
+              />
+            </Motion.div>
           </Motion.div>
+          {/*
+            THE LIGHT, IN TWO WASHES RATHER THAN ONE.
+
+            The scroll wash carries the resting level and deepens as the
+            hero leaves. The entrance wash sits over it and clears
+            completely in 1.8s, so the room resolves out of the dark
+            rather than being revealed by a curtain.
+
+            Two elements, not one, because an `animate` keyframe and a
+            scroll-linked `style` on the same property fight — and they
+            cannot be nested either, since opacity clamps at 1 and the
+            composite needs to start high over a low base. Stacked, the
+            maths is just what the compositor already does:
+            1 − (1−0.14)(1−0.62) = 0.67 on arrival, 0.14 at rest.
+          */}
+          <Motion.div
+            aria-hidden="true"
+            className="absolute inset-0 bg-paper"
+            style={{ opacity: washOpacity }}
+          />
+          <Motion.div
+            aria-hidden="true"
+            className="absolute inset-0 bg-paper"
+            initial={{ opacity: 0.62 }}
+            animate={{ opacity: act2 ? 0 : 0.62 }}
+            transition={{ duration: 1.8, ease: EASE.expo }}
+          />
+          {/* THE TYPE SCRIM, and the reason it runs left rather than up.
+              It lands on the blank wall the headline sits on and is gone
+              by 68% — before the sliding door, the garden and the
+              joinery, none of which are allowed to be fogged to make
+              text readable. Tablet and up only: on a phone the type is
+              below the band on bare paper and needs no help. */}
+          {/* The stops are measured, not chosen: at 1440px the headline
+              column ends at 29% of the width and the sliding door begins
+              at 31%, so the scrim holds full strength to 26%, is half
+              gone by the door and clear by 58%. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-y-0 left-0 hidden w-full bg-gradient-to-r from-paper from-0% via-paper/48 via-30% to-transparent to-58% tablet:block"
+          />
+          {/* Bottom for the metadata rail, top for the header: the bar is
+              transparent over the hero, so the one place the photograph
+              is not allowed to be interesting is the 80px the navigation
+              sits in. The bottom band was 72% and is now 26% — the floor
+              of this plate carries the reflections, and they were the
+              first thing the old full-height gradient erased. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 bottom-0 h-[28%] bg-gradient-to-t from-paper via-paper/50 to-transparent"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 top-0 h-[18%] bg-gradient-to-b from-paper/75 to-transparent"
+          />
         </Motion.div>
-        {/*
-          THE LIGHT, IN TWO WASHES RATHER THAN ONE.
+      </div>
 
-          The scroll wash carries the resting level and deepens as the
-          hero leaves. The entrance wash sits over it and clears
-          completely in 1.8s, so the building resolves out of the dark
-          rather than being revealed by a curtain.
+      {/*
+        THE TYPE COLUMN.
 
-          Two elements, not one, because an `animate` keyframe and a
-          scroll-linked `style` on the same property fight — and they
-          cannot be nested either, since opacity clamps at 1 and the
-          composite needs to start at 0.8 over a 0.35 base. Stacked, the
-          maths is just what the compositor already does:
-          1 − (1−0.35)(1−0.7) = 0.80 on arrival, 0.35 at rest.
-        */}
-        <Motion.div
-          aria-hidden="true"
-          className="absolute inset-0 bg-paper"
-          style={{ opacity: washOpacity }}
-        />
-        <Motion.div
-          aria-hidden="true"
-          className="absolute inset-0 bg-paper"
-          initial={{ opacity: 0.7 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: 1.8, ease: EASE.expo }}
-        />
-        {/* Bottom-weighted for the headline, top-weighted for the header:
-            the bar is transparent over the hero, so the one place the
-            photograph is not allowed to be interesting is the 80px the
-            navigation sits in. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 h-[72%] bg-gradient-to-t from-paper via-paper/75 to-transparent"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-[20%] bg-gradient-to-b from-paper/80 to-transparent"
-        />
-      </Motion.div>
-
-      {/* The foreground leaves twice as fast as the background arrives,
-          and in the opposite direction. That difference in rate IS the
-          depth — nothing here is rotated, scaled or put on a plane. */}
+        In flow beneath the band on a phone; on the blank left third of
+        the photograph from 640px up, held off the bottom so the metadata
+        rail has the floor to itself. The foreground leaves twice as fast
+        as the background arrives, and in the opposite direction — that
+        difference in rate IS the depth, and nothing here is rotated,
+        scaled or put on a plane.
+      */}
       <Motion.div
-        className="absolute inset-x-0 bottom-0 pb-8 tablet:pb-9"
+        /*
+         * THE CLEARANCES ARE FIXED, NOT PROPORTIONAL, and that is the
+         * point. Centring the column in the raw viewport put a three-line
+         * headline under the fixed header on any laptop short enough to
+         * have browser chrome — 758px of usable height was enough to
+         * collide. `pt` clears the header and `pb` clears the metadata
+         * rail, and the block centres in what is left, so it cannot
+         * overlap either at any height.
+         */
+        className="relative z-10 flex flex-1 flex-col justify-end pb-7 pt-9 tablet:absolute tablet:inset-x-0 tablet:top-0 tablet:h-full tablet:justify-center tablet:pb-[9rem] tablet:pt-[7.5rem]"
         style={{ opacity, y: typeY }}
       >
         <Container>
-          <h1 className="font-display text-hero text-ink">
-            <SplitText as="span" text={line1} mode="chars" immediate delay={CUE.head} className="block" />
+          {/*
+            THE HEADLINE, RE-MEASURED RATHER THAN RESIZED.
+
+            It was capped at 7.5rem and set across the full container,
+            which put a 120px line straight through the middle of
+            whatever it was standing on. The cap is now 4.75rem and the
+            block is held to 15ch, so `Tropical architecture` breaks
+            after `Tropical` and the longest visual line — `architecture`
+            — is about 6em wide. At 1440px that is 460px against the
+            475px of blank wall the plate offers. The headline got
+            smaller and reads larger, because it now has an edge.
+
+            `SplitText` wraps every word in `whitespace-nowrap`, so the
+            per-character animation survives the break: the line wraps
+            between words, never through one.
+          */}
+          <h1 className="max-w-[13ch] font-display text-hero text-ink">
+            <SplitText
+              as="span"
+              text={line1}
+              mode="chars"
+              immediate
+              play={act2}
+              delay={CUE.head}
+              className="block"
+            />
             <SplitText
               as="span"
               text={line2}
               mode="words"
               immediate
+              play={act2}
               delay={CUE.head + 0.37}
-              className="block italic text-ink/85 tablet:pl-[10%]"
+              className="block italic text-ink/85 tablet:pl-[8%]"
             />
           </h1>
 
-          <div className="mt-8 flex flex-col gap-6 tablet:mt-9 tablet:flex-row tablet:items-end tablet:justify-between">
+          {/* Subhead and action stack rather than sitting shoulder to
+              shoulder: the row form needed the full container width, and
+              the column is now 44% of it. Reading order is also the
+              order of the score — sentence, then the thing to do. */}
+          <div className="mt-7 flex max-w-[30rem] flex-col items-start gap-6 tablet:mt-8 desktop:max-w-[34rem]">
             <Motion.p
-              className="max-w-[38ch] font-text text-body text-ink-2 desktop:text-body-lg"
+              className="max-w-[34ch] font-text text-body text-ink-2 desktop:text-body-lg"
               initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={act2 ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
               transition={{ duration: 0.9, ease: EASE.expo, delay: CUE.sub }}
             >
               {home.heroSubhead[locale]}
             </Motion.p>
             <Motion.div
               initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={act2 ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
               transition={{ duration: 0.9, ease: EASE.expo, delay: CUE.cta }}
             >
               <Action href={paths.contact(locale)} size="large">
@@ -272,11 +404,22 @@ export function Hero({
               </Action>
             </Motion.div>
           </div>
+        </Container>
+      </Motion.div>
 
+      {/* THE METADATA RAIL, on the floor of the hero rather than stacked
+          under the action. It is the only element that spans the full
+          container width, which is what makes it read as a base line
+          under the composition instead of a fourth paragraph. */}
+      <Motion.div
+        className="relative z-10 pb-8 tablet:absolute tablet:inset-x-0 tablet:bottom-0 tablet:pb-9"
+        style={{ opacity }}
+      >
+        <Container>
           <Motion.div
-            className="mt-8 flex items-baseline justify-between gap-5 border-t border-line pt-4"
+            className="flex items-baseline justify-between gap-5 border-t border-line pt-4"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: act2 ? 1 : 0 }}
             transition={{ duration: 1, ease: EASE.expo, delay: CUE.meta }}
           >
             <ul className="flex flex-wrap items-baseline gap-x-6 gap-y-1 font-text text-caption text-ink-3">
@@ -286,14 +429,16 @@ export function Hero({
                 </li>
               ))}
             </ul>
-            {/* The frame is credited, not decorated. */}
+            {/* The frame is credited, not decorated. The hero plate is
+                its own master, so the credit names the project the room
+                belongs to rather than the file. */}
             <Link
-              href={paths.project(locale, bed.project.slug)}
+              href={paths.project(locale, credit.slug)}
               className="sweep hidden shrink-0 font-text text-caption text-ink-3 transition-colors duration-300 ease-expo hover:text-ink tablet:block"
             >
-              {bed.project.name[locale]}
+              {credit.name[locale]}
               <span aria-hidden="true"> — </span>
-              {bed.project.type[locale]}, {bed.project.location[locale]}
+              {credit.type[locale]}, {credit.location[locale]}
             </Link>
           </Motion.div>
         </Container>
@@ -309,7 +454,7 @@ export function Hero({
       >
         <Motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: act2 ? 1 : 0 }}
           transition={{ duration: 0.8, ease: EASE.expo, delay: CUE.hint }}
         >
           {/* A BUTTON, BECAUSE IT LOOKS LIKE ONE. An indicator that
@@ -478,8 +623,17 @@ export function Disciplines({ locale }: { locale: Locale }) {
           animate={{ width: shown ? 400 : 0, height: shown ? 267 : 0, opacity: shown ? 1 : 0 }}
           transition={{ duration: 0.6, ease: EASE.expo }}
         >
+          {/* Built through `crop` rather than by hand: this was the one
+              photograph path on the site assembled from a string literal,
+              and it was therefore the one that did not follow when the
+              masters moved to `images-2`. */}
           {preview && (
-            <Fill src={`/images/projects/${preview.image}-3x2.jpg`} alt="" sizes="400px" eager />
+            <Fill
+              src={crop(preview.slug, preview.image, 'landscape')}
+              alt=""
+              sizes="400px"
+              eager
+            />
           )}
         </Motion.div>
       </Motion.div>
@@ -845,16 +999,16 @@ export function ProjectHero({ project, locale }: { project: Project; locale: Loc
   const section = useRef<HTMLElement>(null);
   const progress = useProgress(section, ['start start', 'end start']);
   const opacity = useTransform(progress, [0, 0.75], [1, 0]);
-  const y = useTransform(progress, [0, 1], ['0%', '10%']);
+  const y = useTransform(progress, [0, 1], ['0%', '3%']);
   const opening = project.images[0];
   if (!opening) return null;
 
   return (
-    <section ref={section} className="relative min-h-[90vh] overflow-hidden">
-      <Motion.div className="absolute inset-0" style={{ y }}>
+    <section ref={section} className="relative aspect-[4/5] overflow-hidden tablet:aspect-[3/2]">
+      <Motion.div className="absolute -inset-y-[3%] inset-x-0" style={{ y }}>
         <Motion.div
           className="absolute inset-0"
-          initial={{ clipPath: 'inset(10% 0% 10% 0%)', scale: 1.06 }}
+          initial={{ clipPath: 'inset(4% 0% 4% 0%)', scale: 1.02 }}
           animate={{ clipPath: 'inset(0% 0% 0% 0%)', scale: 1 }}
           transition={{ duration: 1.6, ease: EASE.expo }}
         >
@@ -971,7 +1125,7 @@ function Plate({
         image={image}
         locale={locale}
         sizes={sizes}
-        parallax={full ? 44 : 56}
+        parallax={full ? 14 : 18}
         reveal={full ? 'curtain' : 'wipe'}
       />
       {image.caption !== undefined && (
@@ -1085,7 +1239,7 @@ export function NextProject({ project, locale }: { project: Project; locale: Loc
       <div className="mt-8">
         <CursorLabel label={ui.viewProject[locale]} className="block">
           <Link href={paths.project(locale, project.slug)} className="group relative block">
-            <div ref={ref} className="relative h-[min(66.667vw,74vh)] overflow-hidden bg-sunk">
+            <div ref={ref} className="relative aspect-[4/5] overflow-hidden bg-sunk tablet:aspect-[3/2]">
               <Motion.div
                 className="absolute inset-0"
                 initial={{ clipPath: 'inset(0% 0% 100% 0%)' }}
@@ -1099,7 +1253,7 @@ export function NextProject({ project, locale }: { project: Project; locale: Loc
                   sizes="100vw"
                   focal={opening.focal}
                   eager={inView}
-                  className="transition-transform duration-[1400ms] ease-expo group-hover:scale-[1.03]"
+                  className="transition-transform duration-[1400ms] ease-expo group-hover:scale-[1.02]"
                 />
               </Motion.div>
               {/* The light coming up. The wash starts heavy and lifts over

@@ -3,23 +3,34 @@ import type { Project, ProjectImage } from '@/content/types';
 /**
  * THE WORK. Eight projects, in display order.
  *
- * Every frame in this file was reviewed individually — resolution,
- * real detail per pixel, subject position — and carries the result as
- * `weight` and `focal`. Alt text was rewritten from the photographs
- * rather than inherited; four entries had been describing a different
- * picture.
+ * REBUILT AGAINST `images-2`, AND THIS WAS NOT A RE-EXPORT.
  *
- * FOUR MASTERS ARE DELIBERATELY UNPUBLISHED, out of the forty that exist:
- * `amadya-05`, `mrs-d-house-05` and `the-prasetyos-05` are macroblocked
- * phone snapshots — a bare room, a part-built kitchen, a ceiling — and
- * `ms-ra-house-03` is a clean render cropped through the middle of a
- * television. Every other master is here. (`atomic-cafe-02` was cut in an
- * earlier pass as a near-duplicate of the frame that opens the project;
- * it is not — it is the same counter seen whole, and it is back.)
+ * The ids and the folder structure are identical, so the migration
+ * itself was one line in `crop()`. The photographs are not. Most of the
+ * forty masters are a NEW RENDER of their subject — a different camera,
+ * a different time of day, sometimes a different room — and roughly half
+ * of the alt text in the previous revision would have gone on describing
+ * a picture that is no longer there. `amadya-02` was an espresso bar and
+ * is now a pastry counter. `waroeng-andalan-01` was a shopfront and is
+ * now the order counter. `mrs-d-house-01` and `mr-yp-house-01` were
+ * street elevations and are both interiors; the elevations moved to
+ * `-02` and `-03` respectively. `ms-ra-house-02` was a kitchen and is
+ * now a sitting room, and the kitchen is at `-03`.
+ *
+ * So every frame here was opened and looked at, and `alt`, `caption`,
+ * `focal`, `weight` and the running order were all re-derived from what
+ * is actually in the file. Where the old copy still fits the new picture
+ * it is kept verbatim — that is the minority.
+ *
+ * ALL FORTY MASTERS ARE NOW PUBLISHED. The four that were held back —
+ * `amadya-05`, `mrs-d-house-05`, `the-prasetyos-05`, `ms-ra-house-03` —
+ * were held back because they were macroblocked phone snapshots or, in
+ * Ms. RA's case, a render cropped through the middle of a television.
+ * All four have been re-shot at the same standard as the rest of the
+ * set, and there is no longer a reason to hide them.
  *
  * The order is editorial: `images[0]` opens the project and is always
- * the strongest frame, which was NOT true before — Ms. RA House used to
- * open on the weakest render in its own set.
+ * the strongest frame.
  */
 const REGISTRY: readonly Project[] = [
   {
@@ -33,36 +44,34 @@ const REGISTRY: readonly Project[] = [
       en: 'The second branch of Waroeng Andalan builds upon the brand’s established identity while offering a significantly larger dining experience. Designed to enhance the everyday dining experience, the space blends warmth, nostalgia, and contemporary comfort, transforming a casual eatery into a memorable culinary destination.',
       id: 'Cabang kedua Waroeng Andalan melanjutkan identitas yang telah dibangun oleh brand ini, kini hadir dengan pengalaman bersantap yang jauh lebih luas. Dirancang untuk meningkatkan pengalaman makan sehari-hari, ruang ini memadukan kehangatan, nostalgia, dan kenyamanan kontemporer, mengubah sebuah warung makan sederhana menjadi destinasi kuliner yang berkesan.',
     },
+    /*
+     * The only project whose entire set is exported at full-bleed size —
+     * all ten masters are 4200x2800 / 3220x4025 and run 2–3.5 MB each,
+     * against 0.3–0.8 MB elsewhere. It carries the most real detail per
+     * pixel of anything on the site, which is why four of the five are
+     * allowed a placement above `detail`.
+     */
     images: [
       {
         id: 'waroeng-andalan-01',
         weight: 'lead',
-        focal: [50, 52],
+        focal: [50, 48],
         alt: {
-          en: 'Waroeng Andalan at street level: green and white signage above a full-height glazed frontage, with the dining room visible inside.',
-          id: 'Waroeng Andalan dilihat dari jalan: signage hijau putih di atas fasad kaca setinggi penuh, dengan ruang makan terlihat di dalamnya.',
-        },
-      },
-      {
-        id: 'waroeng-andalan-04',
-        weight: 'lead',
-        focal: [50, 50],
-        alt: {
-          en: 'Order counter under a curved rattan canopy, with printed menu boards above and a patterned tile floor.',
-          id: 'Meja pemesanan di bawah kanopi rotan melengkung, dengan papan menu di atasnya dan lantai keramik bermotif.',
-        },
-        caption: {
-          en: 'Order counter, rattan canopy.',
-          id: 'Meja pemesanan, kanopi rotan.',
+          en: 'Order counter under a curved rattan canopy, illuminated menu boards above, between exposed brick and green columns.',
+          id: 'Meja pemesanan di bawah kanopi rotan melengkung, papan menu menyala di atasnya, di antara bata ekspos dan kolom hijau.',
         },
       },
       {
         id: 'waroeng-andalan-03',
-        weight: 'wide',
-        focal: [47, 55],
+        weight: 'lead',
+        focal: [48, 55],
         alt: {
-          en: 'Dining hall with green structural columns, a woven ceiling grid and bar seating along the window.',
-          id: 'Ruang makan dengan kolom struktur hijau, plafon anyaman berpetak, dan kursi bar di sepanjang jendela.',
+          en: 'Dining hall with green structural columns, a woven ceiling grid and bar seating along the glazing.',
+          id: 'Ruang makan dengan kolom struktur hijau, plafon anyaman berpetak, dan kursi bar di sepanjang kaca.',
+        },
+        caption: {
+          en: 'The hall, from the entrance.',
+          id: 'Ruang makan, dari pintu masuk.',
         },
       },
       {
@@ -81,10 +90,23 @@ const REGISTRY: readonly Project[] = [
       {
         id: 'waroeng-andalan-05',
         weight: 'wide',
+        focal: [52, 52],
+        alt: {
+          en: 'Green banquette running the length of the room, against exposed brick, timber panelling and wall lights.',
+          id: 'Bangku hijau memanjang sepanjang ruang, dengan latar bata ekspos, panel kayu, dan lampu dinding.',
+        },
+      },
+      {
+        id: 'waroeng-andalan-04',
+        weight: 'wide',
         focal: [45, 55],
         alt: {
-          en: 'Long communal table with green banquette seating over a patterned green and white tile floor.',
-          id: 'Meja komunal panjang dengan bangku hijau di atas lantai keramik bermotif hijau putih.',
+          en: 'Private dining room with a long table, a projection screen and louvred windows along one wall.',
+          id: 'Ruang makan privat dengan meja panjang, layar proyeksi, dan jendela krepyak di sepanjang satu dinding.',
+        },
+        caption: {
+          en: 'Private room, screen down.',
+          id: 'Ruang privat, layar diturunkan.',
         },
       },
     ],
@@ -115,36 +137,57 @@ const REGISTRY: readonly Project[] = [
       {
         id: 'amadya-02',
         weight: 'wide',
-        focal: [55, 48],
-        alt: {
-          en: 'Espresso bar in timber and stainless steel beneath the illuminated Amadya menu board.',
-          id: 'Bar espreso berbahan kayu dan baja tahan karat di bawah papan menu Amadya yang menyala.',
-        },
-        caption: {
-          en: 'Espresso bar, timber and steel.',
-          id: 'Bar espreso, kayu dan baja.',
-        },
-      },
-      {
-        id: 'amadya-03',
-        weight: 'wide',
         focal: [45, 52],
         alt: {
           en: 'Pastry counter with open timber shelving, ceramic ware and a round mirror on the concrete wall behind.',
           id: 'Meja pastry dengan rak kayu terbuka, keramik, dan cermin bundar di dinding beton di belakangnya.',
         },
+        caption: {
+          en: 'Pastry counter, concrete and timber.',
+          id: 'Meja pastry, beton dan kayu.',
+        },
       },
       {
         id: 'amadya-04',
-        weight: 'detail',
-        focal: [56, 53],
+        weight: 'wide',
+        focal: [52, 52],
         alt: {
-          en: 'Site documentation: the stairwell mid-construction, bare plaster awaiting finish.',
-          id: 'Dokumentasi lapangan: tangga saat konstruksi, plester polos menunggu finishing.',
+          en: 'Dining area behind sliding timber screens, with a paper lantern pendant and a perforated block wall.',
+          id: 'Area makan di balik sekat kayu geser, dengan lampu gantung kertas dan dinding roster.',
+        },
+      },
+      {
+        id: 'amadya-03',
+        weight: 'wide',
+        focal: [48, 55],
+        alt: {
+          en: 'Banquette seating along a sage green wall, with timber chairs and brass pendants above.',
+          id: 'Bangku panjang di sepanjang dinding hijau sage, dengan kursi kayu dan lampu gantung kuningan di atasnya.',
         },
         caption: {
-          en: 'During construction.',
-          id: 'Saat konstruksi.',
+          en: 'Banquette, sage and brass.',
+          id: 'Bangku panjang, sage dan kuningan.',
+        },
+      },
+      /*
+       * Published for the first time. The old `amadya-05` was a
+       * macroblocked phone snapshot of a bare room; this is a clean,
+       * evenly lit frame of the same shell, and it is the only
+       * before-state Amadya has left — the previous set carried a
+       * mid-construction stairwell at `-04`, and `-04` is now a finished
+       * dining area.
+       */
+      {
+        id: 'amadya-05',
+        weight: 'detail',
+        focal: [50, 52],
+        alt: {
+          en: 'Site documentation: the bare shell before fit-out, patched plaster around a new stair.',
+          id: 'Dokumentasi lapangan: ruang kosong sebelum pengerjaan, plester bertambal di sekitar tangga baru.',
+        },
+        caption: {
+          en: 'The shell, before fit-out.',
+          id: 'Ruang kosong, sebelum pengerjaan.',
         },
       },
     ],
@@ -162,49 +205,66 @@ const REGISTRY: readonly Project[] = [
       en: 'An old house transformed into a communal café, breakfast spot, and mini museum for the local community to gather, share ideas, and showcase local products.',
       id: 'Sebuah rumah lama diubah menjadi kafe komunal, tempat sarapan, sekaligus museum mini bagi warga sekitar untuk berkumpul, bertukar ide, dan menampilkan produk lokal.',
     },
+    /*
+     * Every frame in this set is now a finished interior. The old set
+     * led on a shopfront and closed on an as-found documentary frame,
+     * and `images-2` has neither — so the before/after reading is gone
+     * and the captions that carried it have gone with it. What is left
+     * is one room, shot five ways, which suits a project whose whole
+     * subject is a single converted house.
+     */
     images: [
-      {
-        id: 'the-prasetyos-03',
-        weight: 'lead',
-        focal: [50, 50],
-        alt: {
-          en: 'Interior under exposed timber roof beams, with framed pictures, a wall clock and a green painted dado.',
-          id: 'Interior di bawah balok atap kayu ekspos, dengan foto berbingkai, jam dinding, dan dinding berlapis cat hijau setinggi pinggang.',
-        },
-      },
       {
         id: 'the-prasetyos-01',
         weight: 'lead',
-        focal: [52, 52],
+        focal: [50, 52],
         alt: {
-          en: 'Shopfront of the converted house, with a timber door and hand-painted signage above.',
-          id: 'Tampak muka rumah yang dialihfungsikan, dengan pintu kayu dan signage bertuliskan tangan di atasnya.',
-        },
-        caption: {
-          en: 'The house, from the street.',
-          id: 'Rumah itu, dari jalan.',
+          en: 'Service counter in stainless steel and slatted timber, under exposed roof beams and black pendant lamps.',
+          id: 'Meja layanan berbahan baja tahan karat dan bilah kayu, di bawah balok atap ekspos dan lampu gantung hitam.',
         },
       },
       {
         id: 'the-prasetyos-02',
-        weight: 'wide',
-        focal: [50, 55],
+        weight: 'lead',
+        focal: [48, 52],
         alt: {
-          en: 'Communal room with white walls, timber shutters, a green painted dado and a woven pendant lamp.',
-          id: 'Ruang komunal dengan dinding putih, jendela kayu, dinding hijau setinggi pinggang, dan lampu gantung anyaman.',
+          en: 'The counter seen along its length, with a chalkboard menu, a pastry case and a banquette beyond.',
+          id: 'Meja layanan dilihat memanjang, dengan papan menu kapur, etalase pastry, dan bangku panjang di baliknya.',
+        },
+        caption: {
+          en: 'The counter, end to end.',
+          id: 'Meja layanan, dari ujung ke ujung.',
+        },
+      },
+      {
+        id: 'the-prasetyos-03',
+        weight: 'wide',
+        focal: [52, 55],
+        alt: {
+          en: 'Timber armchairs at a marble table, against a green painted dado and a shuttered window onto the garden.',
+          id: 'Kursi berlengan kayu di meja marmer, dengan latar dinding hijau setinggi pinggang dan jendela krepyak ke taman.',
+        },
+      },
+      {
+        id: 'the-prasetyos-05',
+        weight: 'wide',
+        focal: [45, 55],
+        alt: {
+          en: 'The room seen whole under exposed timber roof beams, tables to one side and the counter to the other.',
+          id: 'Ruang dilihat menyeluruh di bawah balok atap kayu ekspos, meja di satu sisi dan meja layanan di sisi lain.',
+        },
+        caption: {
+          en: 'Under the roof beams.',
+          id: 'Di bawah balok atap.',
         },
       },
       {
         id: 'the-prasetyos-04',
-        weight: 'detail',
-        focal: [48, 50],
+        weight: 'wide',
+        focal: [48, 52],
         alt: {
-          en: 'Site documentation: the room as found, with teal armchairs, a vintage television and framed photographs.',
-          id: 'Dokumentasi lapangan: ruang apa adanya, dengan kursi hijau toska, televisi tua, dan foto berbingkai.',
-        },
-        caption: {
-          en: 'The room as found.',
-          id: 'Ruang sebelum dikerjakan.',
+          en: 'Steel-framed tables and a rattan armchair against a green dado, with a framed vintage matchbox print above.',
+          id: 'Meja berangka baja dan kursi rotan dengan latar dinding hijau, serta cetakan korek api antik berbingkai di atasnya.',
         },
       },
     ],
@@ -228,12 +288,12 @@ const REGISTRY: readonly Project[] = [
         weight: 'lead',
         focal: [50, 50],
         alt: {
-          en: 'Service counter in stainless steel and glass block under the illuminated Kintaro sign.',
-          id: 'Meja layanan berbahan baja tahan karat dan glass block di bawah signage Kintaro yang menyala.',
+          en: 'Service counter in stainless steel and white tile under the illuminated Kintaro sign.',
+          id: 'Meja layanan berbahan baja tahan karat dan keramik putih di bawah signage Kintaro yang menyala.',
         },
       },
       {
-        id: 'kintaro-cafe-03',
+        id: 'kintaro-cafe-05',
         weight: 'lead',
         focal: [48, 52],
         alt: {
@@ -246,34 +306,34 @@ const REGISTRY: readonly Project[] = [
         },
       },
       {
-        id: 'kintaro-cafe-02',
+        id: 'kintaro-cafe-03',
         weight: 'wide',
-        focal: [50, 48],
+        focal: [52, 50],
         alt: {
-          en: 'Dining area with steel-framed tables, black chairs and a planted concrete bench.',
-          id: 'Area makan dengan meja berangka baja, kursi hitam, dan bangku beton bertanaman.',
-        },
-      },
-      {
-        id: 'kintaro-cafe-05',
-        weight: 'wide',
-        focal: [52, 48],
-        alt: {
-          en: 'Dining area against exposed brick, with a perforated metal screen and a timber servery.',
-          id: 'Area makan dengan latar bata ekspos, sekat logam berlubang, dan meja saji kayu.',
+          en: 'Dining area against an oriented-strand board wall hung with merchandise and shelving, under black track lighting.',
+          id: 'Area makan dengan dinding OSB berisi merchandise dan rak, di bawah lampu rel hitam.',
         },
       },
       {
         id: 'kintaro-cafe-04',
         weight: 'wide',
-        focal: [50, 55],
+        focal: [45, 52],
         alt: {
-          en: 'Street elevation in board-marked concrete with a deep overhanging eave and a breeze-block screen.',
-          id: 'Tampak jalan dengan beton ekspos bertekstur bekisting, atap menjorok dalam, dan sekat roster.',
+          en: 'Long communal timber table under exposed services, against precast concrete panels.',
+          id: 'Meja komunal kayu panjang di bawah utilitas ekspos, dengan latar panel beton pracetak.',
         },
         caption: {
-          en: 'Street elevation, deep eave.',
-          id: 'Tampak jalan, atap menjorok.',
+          en: 'The communal table.',
+          id: 'Meja komunal.',
+        },
+      },
+      {
+        id: 'kintaro-cafe-02',
+        weight: 'wide',
+        focal: [50, 52],
+        alt: {
+          en: 'Street elevation under a deep hipped roof, with a timber-framed picture window and a red brick screen.',
+          id: 'Tampak jalan di bawah atap limas yang dalam, dengan jendela berbingkai kayu dan sekat bata merah.',
         },
       },
     ],
@@ -302,34 +362,34 @@ const REGISTRY: readonly Project[] = [
         },
       },
       {
-        id: 'atomic-cafe-05',
-        weight: 'wide',
-        focal: [53, 52],
+        id: 'atomic-cafe-02',
+        weight: 'lead',
+        focal: [50, 52],
         alt: {
-          en: 'Dining area with banquette seating, wall sconces and timber chairs under a soft ceiling wash.',
-          id: 'Area makan dengan bangku panjang, lampu dinding, dan kursi kayu di bawah cahaya plafon yang lembut.',
+          en: 'The room down its length: a black banquette under a long mirror on one side, the counter at the far end.',
+          id: 'Ruang dilihat memanjang: bangku hitam di bawah cermin panjang di satu sisi, meja layanan di ujung ruang.',
+        },
+        caption: {
+          en: 'The room, end to end.',
+          id: 'Ruang, dari ujung ke ujung.',
         },
       },
       {
-        id: 'atomic-cafe-02',
+        id: 'atomic-cafe-05',
         weight: 'wide',
-        focal: [46, 52],
+        focal: [46, 50],
         alt: {
-          en: 'The full counter run: espresso machine and grinders at one end, pastry case and menu board at the other, under a curved brass pendant.',
-          id: 'Bentang meja selengkapnya: mesin espreso dan penggiling di satu ujung, etalase pastry dan papan menu di ujung lain, di bawah lampu gantung kuningan melengkung.',
-        },
-        caption: {
-          en: 'The counter, end to end.',
-          id: 'Meja, dari ujung ke ujung.',
+          en: 'The counter seen at an angle, brass rail and signage above, black tiled plinth below.',
+          id: 'Meja layanan dilihat menyudut, rel kuningan dan signage di atasnya, plint keramik hitam di bawahnya.',
         },
       },
       {
         id: 'atomic-cafe-03',
         weight: 'wide',
-        focal: [50, 55],
+        focal: [52, 50],
         alt: {
-          en: 'Seating nook with a round red table, wall sconces and a framed painting above a banquette.',
-          id: 'Sudut duduk dengan meja bundar merah, lampu dinding, dan lukisan berbingkai di atas bangku panjang.',
+          en: 'Seating nook with round red tables, two wall lights and a framed painting on a timber panel.',
+          id: 'Sudut duduk dengan meja bundar merah, dua lampu dinding, dan lukisan berbingkai di panel kayu.',
         },
         caption: {
           en: 'Seating nook, red and timber.',
@@ -338,11 +398,11 @@ const REGISTRY: readonly Project[] = [
       },
       {
         id: 'atomic-cafe-04',
-        weight: 'detail',
-        focal: [48, 55],
+        weight: 'wide',
+        focal: [45, 55],
         alt: {
-          en: 'Stair detail finished in dark green tile with a timber handrail.',
-          id: 'Detail tangga dengan finishing keramik hijau tua dan pegangan tangan kayu.',
+          en: 'Tables tucked under the stair, against a black tiled wall and a white stringer.',
+          id: 'Meja yang menyelip di bawah tangga, dengan latar dinding keramik hitam dan ibu tangga putih.',
         },
       },
     ],
@@ -362,47 +422,58 @@ const REGISTRY: readonly Project[] = [
     },
     images: [
       {
-        id: 'mrs-d-house-01',
+        id: 'mrs-d-house-02',
         weight: 'lead',
-        focal: [50, 48],
+        focal: [50, 52],
         alt: {
           en: 'Street elevation with red brick arches, a first-floor balcony and planting along the parapet.',
           id: 'Tampak jalan dengan lengkungan bata merah, balkon lantai dua, dan tanaman di sepanjang parapet.',
         },
       },
       {
-        id: 'mrs-d-house-02',
-        weight: 'wide',
-        focal: [52, 55],
+        id: 'mrs-d-house-01',
+        weight: 'lead',
+        focal: [52, 52],
         alt: {
-          en: 'Kitchen in pale timber with a glazed sliding door opening onto a small patio.',
-          id: 'Dapur berbahan kayu terang dengan pintu geser kaca yang membuka ke teras kecil.',
+          en: 'Dining table under an arched opening, between a slatted timber wall and full-height pale cabinetry.',
+          id: 'Meja makan di bawah bukaan melengkung, di antara dinding bilah kayu dan kabinet terang setinggi dinding.',
         },
         caption: {
-          en: 'Kitchen, opening to the patio.',
-          id: 'Dapur, membuka ke teras.',
+          en: 'Dining, through the arch.',
+          id: 'Ruang makan, lewat lengkungan.',
         },
       },
       {
         id: 'mrs-d-house-03',
-        weight: 'detail',
-        focal: [50, 45],
+        weight: 'wide',
+        focal: [48, 52],
         alt: {
-          en: 'Stair with a slatted timber balustrade against a panelled wall.',
-          id: 'Tangga dengan railing kayu berbilah di depan dinding berpanel.',
+          en: 'Living room beneath the stair, with a deep sectional sofa, a gallery wall and the dining room beyond.',
+          id: 'Ruang keluarga di bawah tangga, dengan sofa sudut, dinding galeri, dan ruang makan di baliknya.',
         },
       },
       {
         id: 'mrs-d-house-04',
-        weight: 'detail',
-        focal: [45, 50],
+        weight: 'wide',
+        focal: [55, 55],
         alt: {
-          en: 'Site documentation: the living room as found, before renovation.',
-          id: 'Dokumentasi lapangan: ruang keluarga apa adanya, sebelum renovasi.',
+          en: 'Pantry run in pale timber against a sage wall, with open shelving, jars and built-in ovens.',
+          id: 'Deretan pantri kayu terang dengan latar dinding sage, rak terbuka, toples, dan oven tanam.',
         },
         caption: {
-          en: 'Before renovation.',
-          id: 'Sebelum renovasi.',
+          en: 'Pantry, sage and timber.',
+          id: 'Pantri, sage dan kayu.',
+        },
+      },
+      /* Published for the first time; the old `-05` was a part-built
+         kitchen shot on a phone. */
+      {
+        id: 'mrs-d-house-05',
+        weight: 'wide',
+        focal: [48, 52],
+        alt: {
+          en: 'Multipurpose room with built-in shelving, a panelled dado and an arched window over the treadmill.',
+          id: 'Ruang serbaguna dengan rak tanam, dinding berpanel setinggi pinggang, dan jendela melengkung di atas treadmill.',
         },
       },
     ],
@@ -421,48 +492,62 @@ const REGISTRY: readonly Project[] = [
       id: 'Renovasi ini mengubah dapur yang sempit menjadi ruang yang fungsional dan efisien dalam penyimpanan, terinspirasi desain Japandi. Material hangat, warna-warna lembut, dan garis yang bersih menciptakan area dapur dan makan yang mengundang, sementara ruang keluarga, ruang tamu, dan ruang serbaguna terintegrasi dengan baik untuk menghadirkan suasana yang lebih terbuka dan ramah bagi keseharian maupun saat menerima tamu.',
     },
     images: [
+      /* `-03` opens the project, and it is the frame that was held back
+         in the previous revision as "a render cropped through the middle
+         of a television". It is now the kitchen this renovation is
+         actually about, shot square, and nothing else in the set has a
+         better claim on the lead. */
       {
-        id: 'ms-ra-house-02',
+        id: 'ms-ra-house-03',
         weight: 'lead',
-        focal: [48, 55],
+        focal: [52, 52],
         alt: {
-          en: 'Kitchen tucked beneath the stair, with pale timber cabinetry, under-shelf lighting and a square-tiled splashback.',
-          id: 'Dapur yang menyelip di bawah tangga, dengan kabinet kayu terang, lampu bawah rak, dan dinding keramik kotak.',
+          en: 'Kitchen tucked beneath the stair, with pale timber cabinetry, under-shelf lighting and a white tiled splashback.',
+          id: 'Dapur yang menyelip di bawah tangga, dengan kabinet kayu terang, lampu bawah rak, dan dinding keramik putih.',
         },
       },
       {
-        id: 'ms-ra-house-04',
-        weight: 'wide',
-        focal: [45, 55],
+        id: 'ms-ra-house-02',
+        weight: 'lead',
+        focal: [50, 52],
         alt: {
-          en: 'Kitchen cabinetry with warm under-cabinet lighting and a mosaic-tiled splashback.',
-          id: 'Kabinet dapur dengan lampu hangat di bawah kabinet dan dinding keramik mozaik.',
+          en: 'Sitting area against a slatted timber and woven panel wall, with two moulded chairs and a round timber table.',
+          id: 'Area duduk dengan dinding bilah kayu dan panel anyaman, dua kursi cetak, dan meja bundar kayu.',
         },
         caption: {
-          en: 'Cabinetry as built.',
-          id: 'Kabinet terpasang.',
+          en: 'Sitting area, timber and weave.',
+          id: 'Area duduk, kayu dan anyaman.',
+        },
+      },
+      {
+        id: 'ms-ra-house-05',
+        weight: 'wide',
+        focal: [48, 52],
+        alt: {
+          en: 'Living room with a wall-mounted screen on a timber panel, a floating console and open white shelving.',
+          id: 'Ruang keluarga dengan televisi di panel kayu, konsol melayang, dan rak putih terbuka.',
         },
       },
       {
         id: 'ms-ra-house-01',
         weight: 'wide',
-        focal: [60, 45],
+        focal: [55, 48],
         alt: {
-          en: 'Living room wall with a wall-mounted screen, rattan-fronted cabinets and open shelving.',
-          id: 'Dinding ruang keluarga dengan televisi dinding, kabinet berpintu rotan, dan rak terbuka.',
+          en: 'Living room wall with a wall-mounted screen, a low cabinet run and open shelving through to the hall.',
+          id: 'Dinding ruang keluarga dengan televisi dinding, deretan kabinet rendah, dan rak terbuka menembus ke lorong.',
         },
       },
       {
-        id: 'ms-ra-house-05',
+        id: 'ms-ra-house-04',
         weight: 'detail',
-        focal: [52, 55],
+        focal: [50, 55],
         alt: {
-          en: 'Site documentation: an overhead cabinet with a built-in plate rack.',
-          id: 'Dokumentasi lapangan: kabinet atas dengan rak piring bawaan.',
+          en: 'Utility nook with overhead cabinets, a hanging rail and an ironing bench built into the run.',
+          id: 'Sudut utilitas dengan kabinet atas, gantungan baju, dan meja setrika yang menyatu dengan kabinet.',
         },
         caption: {
-          en: 'Plate rack, as built.',
-          id: 'Rak piring, terpasang.',
+          en: 'Utility nook, as built.',
+          id: 'Sudut utilitas, terpasang.',
         },
       },
     ],
@@ -482,56 +567,59 @@ const REGISTRY: readonly Project[] = [
     },
     images: [
       {
-        id: 'mr-yp-house-01',
+        id: 'mr-yp-house-03',
         weight: 'lead',
-        focal: [50, 55],
+        focal: [50, 52],
         alt: {
-          en: 'Two-storey street elevation with a timber-clad upper volume, a car in the driveway and planting along the wall.',
+          en: 'Two-storey street elevation with a timber-clad upper volume, a car in the carport and planting along the wall.',
           id: 'Tampak jalan dua lantai dengan massa atas berlapis kayu, mobil di carport, dan tanaman di sepanjang dinding.',
         },
       },
       {
-        id: 'mr-yp-house-02',
+        id: 'mr-yp-house-01',
         weight: 'lead',
         focal: [52, 52],
         alt: {
-          en: 'Living room with a full-height timber bookshelf, low media console and a dining table in the foreground.',
-          id: 'Ruang keluarga dengan rak buku kayu setinggi dinding, konsol media rendah, dan meja makan di latar depan.',
+          en: 'Living room against a vertical timber batten wall, with a wall-mounted screen, a long low console and sheer curtains.',
+          id: 'Ruang keluarga dengan dinding bilah kayu vertikal, televisi dinding, konsol rendah memanjang, dan tirai tipis.',
         },
         caption: {
-          en: 'Living room, full-height shelving.',
-          id: 'Ruang keluarga, rak setinggi dinding.',
+          en: 'Living room, timber battens.',
+          id: 'Ruang keluarga, bilah kayu.',
         },
       },
+      /* The same room as the homepage hero plate — see `home.stage` in
+         content/site.ts. The hero ships as its own wider master; this is
+         the 3:2 and 4:5 pair the gallery uses. */
       {
-        id: 'mr-yp-house-03',
+        id: 'mr-yp-house-02',
         weight: 'wide',
-        focal: [54, 50],
+        focal: [52, 55],
         alt: {
-          en: 'Upper terrace with a pergola walkway and climbing greenery spilling over the balustrade.',
-          id: 'Teras atas dengan jalan setapak berpergola dan tanaman rambat yang menjuntai di atas railing.',
+          en: 'Upper landing with a stainless balustrade, looking through a sliding door to the garden beyond.',
+          id: 'Bordes atas dengan railing baja, memandang tembus lewat pintu geser ke taman di baliknya.',
         },
       },
       {
         id: 'mr-yp-house-04',
         weight: 'wide',
-        focal: [50, 58],
+        focal: [50, 52],
         alt: {
-          en: 'Landing with a stainless balustrade, looking through to the garden beyond.',
-          id: 'Bordes dengan railing baja, memandang tembus ke taman di baliknya.',
+          en: 'Kitchen and dining under a globe chandelier, with an exposed brick wall and dark timber shelving.',
+          id: 'Dapur dan ruang makan di bawah lampu gantung bola, dengan dinding bata ekspos dan rak kayu gelap.',
+        },
+        caption: {
+          en: 'Kitchen, under the chandelier.',
+          id: 'Dapur, di bawah lampu gantung.',
         },
       },
       {
         id: 'mr-yp-house-05',
         weight: 'detail',
-        focal: [50, 50],
+        focal: [50, 55],
         alt: {
-          en: 'Detail of vertical timber battens beside a window reveal.',
-          id: 'Detail bilah kayu vertikal di samping bidang jendela.',
-        },
-        caption: {
-          en: 'Timber battens, window reveal.',
-          id: 'Bilah kayu, bidang jendela.',
+          en: 'Galley kitchen in dark timber, with a range under an extractor and lighting beneath the wall units.',
+          id: 'Dapur memanjang berbahan kayu gelap, dengan kompor di bawah penyedot asap dan lampu di bawah kabinet.',
         },
       },
     ],

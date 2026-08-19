@@ -10,6 +10,7 @@ import {
   stagger,
   useInView,
   useMedia,
+  useMagnetic,
   useMotionValueEvent,
   useProgress,
   useReducedMotion,
@@ -96,6 +97,11 @@ export function Portfolio({
   const progress = useProgress(wrapper, ['start start', 'end end']);
   const smooth = useSpring(progress, SPRING.track);
   const x = useTransform(smooth, [0, 1], ['0vw', `-${String(travel)}vw`]);
+  /* The warm field travels the opposite way to the track and at a
+     fraction of its rate, so it reads as depth behind the work rather
+     than as a layer glued to it. */
+  const washX = useTransform(smooth, [0, 1], ['-18%', '18%']);
+  const washOpacity = useTransform(smooth, [0, 0.5, 1], [0.55, 1, 0.55]);
 
   /* The active panel is derived from progress, not from an observer:
      the panels are inside a translated track, so their intersection with
@@ -262,7 +268,7 @@ export function Portfolio({
       */}
       <div
         ref={viewport}
-        className={`desktop:sticky desktop:top-0 desktop:flex desktop:h-screen desktop:flex-col desktop:overflow-hidden ${
+        className={`relative desktop:sticky desktop:top-0 desktop:flex desktop:h-screen desktop:flex-col desktop:overflow-hidden ${
           dragging ? 'desktop:cursor-grabbing desktop:select-none' : ''
         }`}
         onPointerDown={onPointerDown}
@@ -276,6 +282,23 @@ export function Portfolio({
           event.preventDefault();
         }}
       >
+        {/*
+          §23 — THE WARM FIELD.
+
+          The homepage is one dark surface from the hero to the footer,
+          and that is what reads as "monochrome". This is a single
+          scroll-linked radial in the studio's own brass — the accent
+          that already exists in the token set, and the colour that is
+          already in every timber and daylight render on the page. It
+          slides across the viewport as the horizontal track travels, so
+          the work moves through a warm field rather than across a flat
+          black one. One element, one gradient, `opacity` and `x` only.
+        */}
+        <Motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(70%_60%_at_50%_45%,rgba(200,160,106,0.13),transparent_70%)]"
+          style={{ x: washX, opacity: washOpacity }}
+        />
         <div className="shrink-0 pt-9 desktop:pb-4 desktop:pt-[5.5rem]">
           <Container>
             <div className="flex items-baseline justify-between gap-5">
@@ -322,14 +345,29 @@ export function Portfolio({
  * back out, because reversing a stagger on scroll-back reads as a
  * flicker.
  */
+/**
+ * THE PANEL CONTENT STATES.
+ *
+ * These used to move 0px and 12px, which meant switching project changed
+ * an opacity and nothing else — technically a transition, visually a
+ * cross-fade. The travel is now large enough to read as the old project
+ * LEAVING and the next one ARRIVING: the number and the fact list rise
+ * 18px, the name and the sentence rise 34px, and the whole group is
+ * staggered by its parent so they arrive in reading order rather than
+ * together.
+ *
+ * `dim` also drops further (0.22 → 0.12) and pushes the inactive panel
+ * DOWN rather than leaving it in place, so a half-visible neighbouring
+ * panel reads as waiting rather than as a dimmed copy of the live one.
+ */
 const META: Variants = {
-  dim: { opacity: 0.22, y: 0 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE.expo } },
+  dim: { opacity: 0.12, y: 18 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.75, ease: EASE.expo } },
 };
 
 const META_LEAD: Variants = {
-  dim: { opacity: 0.22, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.85, ease: EASE.expo } },
+  dim: { opacity: 0.12, y: 34 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.95, ease: EASE.expo } },
 };
 
 /**
@@ -354,6 +392,11 @@ function Panel({
   index: number;
   active: boolean;
 }) {
+  /* Declared ABOVE the early return — a hook after a conditional
+     `return null` is a rules-of-hooks violation and would desync the
+     hook order the first time a project shipped with no images. */
+  const plate = useMagnetic(0.035, 0);
+
   const opening = project.images[0];
   if (!opening) return null;
 
@@ -373,7 +416,7 @@ function Panel({
           {/* Meta */}
           <Motion.div
             className="order-2 flex flex-col justify-between desktop:order-1 desktop:w-[24%] desktop:py-1"
-            variants={stagger(0.06)}
+            variants={stagger(0.09)}
             initial={false}
             animate={active ? 'visible' : 'dim'}
           >
@@ -421,12 +464,21 @@ function Panel({
           {/* The rendering. It gets the rest of the panel — on desktop
               that is roughly three quarters of the width and the full
               height between masthead and controls. */}
-          <div className="relative order-1 aspect-[3/2] overflow-hidden bg-sunk desktop:order-2 desktop:aspect-auto desktop:h-full desktop:min-h-0 desktop:flex-1">
+          <div className="relative order-1 aspect-[4/5] overflow-hidden bg-sunk tablet:aspect-[3/2] desktop:order-2 desktop:aspect-auto desktop:h-full desktop:min-h-0 desktop:flex-1">
+            {/* §17 — THE PHOTOGRAPH ANSWERS THE POINTER.
+                `useMagnetic` at 0.035 moves the plate by at most a few
+                pixels inside its own frame, which is enough to read as
+                the image being alive under the cursor and far too little
+                to distort the architecture. It self-disables on coarse
+                pointers and under reduced motion, so touch devices and
+                the accessibility setting need no branch here. */}
             <Motion.div
               className="absolute inset-0"
+              ref={plate.ref as React.RefObject<HTMLDivElement>}
+              style={{ x: plate.x, y: plate.y }}
               initial={false}
-              animate={{ scale: active ? 1 : 1.07 }}
-              transition={{ duration: 1.1, ease: EASE.expo }}
+              animate={{ scale: active ? 1 : 1.06, opacity: active ? 1 : 0.45 }}
+              transition={{ duration: 1.15, ease: EASE.expo }}
             >
               <Fill
                 src={crop(project.slug, opening.id, 'landscape')}
@@ -447,7 +499,7 @@ function Panel({
                  */
                 priority={index === 0}
                 eager={index < 3}
-                className="transition-transform duration-[1400ms] ease-expo group-hover:scale-[1.03]"
+                className="transition-transform duration-[1400ms] ease-expo group-hover:scale-[1.02]"
               />
             </Motion.div>
             {/* Inactive panels sit back a step. Opacity, not a filter:
