@@ -20,7 +20,24 @@ import type { Localized, Passage } from '@/content/types';
 
 export const site = {
   name: 'Lark Studio',
-  origin: 'https://larkstudio.co.id',
+  /**
+   * THE CANONICAL ORIGIN, and it is load-bearing far beyond a link tag.
+   *
+   * This was `larkstudio.co.id`, which HAS NO DNS RECORD AT ALL. The site
+   * is served from `larkstudio.id`. Every page therefore told crawlers
+   * that its canonical version lived on a host that does not resolve —
+   * 16 references per page, covering `rel=canonical`, all three hreflang
+   * alternates, `og:url`, `og:image` and the sitemap line in robots.txt.
+   *
+   * That is the actual reason Google was showing a generic globe. A
+   * favicon is associated with the INDEXED CANONICAL HOST, and Google
+   * cannot fetch an icon from a domain that does not exist. The icon
+   * files themselves were already correct and served cleanly; nothing
+   * about them was ever going to fix it.
+   *
+   * `www.larkstudio.id` already 307s here, so this is the one origin.
+   */
+  origin: 'https://larkstudio.id',
   email: 'larkstudioindonesia@gmail.com',
   /** E.164, digits only, no plus. */
   whatsapp: '6285117314718',
