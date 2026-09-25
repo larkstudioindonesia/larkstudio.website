@@ -132,37 +132,40 @@
   /* ---------------------------------------------------------------
      TYPE
 
-     Two faces, self-hosted by next/font (see lib/site.ts):
+     One face throughout: Helvetica Neue LT 67 Medium Condensed, loaded
+     from the studio's own file by next/font (see lib/site.ts). Display
+     and text resolve to the same face, so the tiers separate on size,
+     case and measure alone. It is a single upright weight (450); nothing
+     asks the browser for a bold or an italic it would have to fake.
 
-       display  Cormorant Garamond — wordmark, headlines, project names.
-                The voice of an architecture monograph; its italic carries
-                the hero's second line.
-       text     Hanken Grotesk — everything read at body size and every
-                label. Neutral, and the same on every platform.
-
-     Helvetica stays in the stack as the fallback while the faces load.
      The display tier is fluid; reading sizes stay discrete — body copy
      wants a stable measure, not a size that drifts under the reader.
      --------------------------------------------------------------- */
-  --font-helvetica: 'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', sans-serif;
-  --font-display: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
-  --font-text: var(--font-hanken), var(--font-helvetica);
+  --font-helvetica: 'Helvetica Neue', 'Arial Narrow', Arial, sans-serif;
+  --font-display: var(--font-hn-cond), var(--font-helvetica);
+  --font-text: var(--font-hn-cond), var(--font-helvetica);
 
-  --font-weight-regular: 400;
-  --font-weight-medium: 500;
+  /* Both map to the file's one weight, so no class can request a
+     weight the face does not have. */
+  --font-weight-regular: 450;
+  --font-weight-medium: 450;
 
-  --text-micro: 0.6875rem;
-  --text-micro--line-height: 1rem;
-  --text-label: 0.75rem;
-  --text-label--line-height: 1.1rem;
-  --text-caption: 0.8125rem;
-  --text-caption--line-height: 1.3rem;
-  --text-spec: 0.9375rem;
-  --text-spec--line-height: 1.6rem;
-  --text-body: 1.0625rem;
-  --text-body--line-height: 1.75rem;
-  --text-body-lg: 1.125rem;
-  --text-body-lg--line-height: 1.85rem;
+  /* Reading sizes, a step up from the wide-face scale. A condensed face
+     sets roughly 20% more characters in the same width at the same size,
+     so at the old sizes labels and captions read as small and tight; one
+     pixel more restores their colour without changing any measure. */
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1.05rem;
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.15rem;
+  --text-caption: 0.875rem;
+  --text-caption--line-height: 1.35rem;
+  --text-spec: 1rem;
+  --text-spec--line-height: 1.55rem;
+  --text-body: 1.125rem;
+  --text-body--line-height: 1.7rem;
+  --text-body-lg: 1.1875rem;
+  --text-body-lg--line-height: 1.8rem;
   --text-lead: clamp(1.25rem, 0.95rem + 1.1vw, 1.5rem);
   --text-lead--line-height: 1.55;
 
@@ -193,8 +196,6 @@
      that column holds. Leading opens slightly to 0.98 because the line
      now wraps: 0.94 was set for two authored lines and collides on
      three. */
-  /* Re-scaled for Cormorant, whose x-height is well below Helvetica's:
-     the same measure at ~10% more size reads at the same weight. */
   --text-hero: clamp(2.75rem, 1.1rem + 4.9vw, 5.25rem);
   --text-hero--line-height: 0.98;
   --text-hero--letter-spacing: -0.025em;
@@ -213,9 +214,8 @@
      the line is ever drawn is 1.05x its rest width. At 21vw that pushed
      the final "o" past the container and `overflow-hidden` clipped it.
      19vw x 1.05 lands just inside the measure at every width. */
-  /* 22vw for Cormorant: the serif sets "Lark Studio" about 20% narrower
-     than Helvetica did, so the old 19vw left a fifth of the line empty.
-     22vw × the 1.05 scrub still lands inside the measure. */
+  /* 22vw for the condensed face: "Lark Studio" runs to roughly 90% of
+     the container, and 22vw × the 1.05 scrub still lands inside it. */
   --text-mega: clamp(3rem, -0.5rem + 22vw, 23rem);
   --text-mega--line-height: 0.86;
   --text-mega--letter-spacing: -0.03em;
@@ -309,6 +309,8 @@
    * containing block, so this moves nothing.
    */
   html {
+    /* The face has one weight and no italic: never synthesise either. */
+    font-synthesis: none;
     position: relative;
     overflow-x: clip;
     scrollbar-gutter: stable;

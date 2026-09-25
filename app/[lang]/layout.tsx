@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import '@/app/globals.css';
 
-import { displayFace, isLocale, organisationJsonLd, textFace } from '@/lib/site';
+import { brandFace, isLocale, organisationJsonLd } from '@/lib/site';
 import { INTRO_SCRIPT, MotionProvider } from '@/lib/motion';
 import { LOCALES, type Locale } from '@/content/types';
 import { site, ui } from '@/content/site';
@@ -73,7 +73,7 @@ export default async function LocaleLayout({
        hydrates. It does not reach into children. */
     <html
       lang={locale}
-      className={`${displayFace.variable} ${textFace.variable}`}
+      className={brandFace.variable}
       suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col bg-paper font-text text-ink">

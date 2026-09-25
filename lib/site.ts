@@ -1,4 +1,4 @@
-import { Cormorant_Garamond, Hanken_Grotesk } from 'next/font/google';
+import localFont from 'next/font/local';
 import type { Metadata } from 'next';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/content/types';
 import { site } from '@/content/site';
@@ -16,35 +16,25 @@ import { site } from '@/content/site';
  * ------------------------------------------------------------------ */
 
 /*
- * TWO FACES, SELF-HOSTED BY `next/font` AT BUILD — no request to a font
- * service at runtime, and a metric-matched fallback while they load, so
- * the swap does not shift the page.
+ * ONE FACE: Helvetica Neue LT 67 Medium Condensed, the studio's own file,
+ * self-hosted by `next/font/local` from `app/fonts/` — the one copy in the
+ * repository. It is the only weight the studio supplied (450, upright),
+ * so it is declared as exactly that and nothing else: no bold, no italic,
+ * and `font-synthesis: none` in globals.css stops the browser inventing
+ * either. `adjustFontFallback` sizes the system fallback to the file's
+ * metrics, so the swap on load moves nothing.
  *
- *   DISPLAY  Cormorant Garamond — a high-contrast Garamond cut for large
- *            sizes. The wordmark, headlines and project names: the voice
- *            of an architecture monograph, where Helvetica had read as
- *            interface. Its italic carries the hero's second line.
- *   TEXT     Hanken Grotesk — a neutral grotesk in the register the site
- *            already had, but the SAME on every platform: the Helvetica
- *            stack fell back to Arial on Windows and Android.
- *
- * Chosen by setting candidates side by side on the site's own dark ground
- * and on album paper (Newsreader read as a newspaper, Fraunces as soft,
- * Instrument Serif as condensed). The layout applies the two variables to
- * `<html>`; `--font-display` / `--font-text` in globals.css resolve them.
+ * The layout applies the variable to `<html>`; `--font-display` and
+ * `--font-text` in globals.css both resolve to it.
  */
-export const displayFace = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['400', '500'],
-  style: ['normal', 'italic'],
-  variable: '--font-cormorant',
+export const brandFace = localFont({
+  src: '../app/fonts/HelveticaNeueLT-67MdCn.ttf',
+  weight: '450',
+  style: 'normal',
+  variable: '--font-hn-cond',
   display: 'swap',
-});
-
-export const textFace = Hanken_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-hanken',
-  display: 'swap',
+  fallback: ['Helvetica Neue', 'Arial Narrow', 'Arial', 'sans-serif'],
+  adjustFontFallback: 'Arial',
 });
 
 /* ------------------------------------------------------------------ *

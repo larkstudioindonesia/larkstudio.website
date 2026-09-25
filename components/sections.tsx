@@ -392,7 +392,7 @@ export function Hero({ locale, credit }: { locale: Locale; credit: Project }) {
               immediate
               play={act2}
               delay={CUE.head + 0.37}
-              className="block italic text-ink/85 tablet:pl-[8%]"
+              className="block text-ink/70 tablet:pl-[8%]"
             />
           </h1>
 

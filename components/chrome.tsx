@@ -1711,7 +1711,7 @@ function AnnouncementDialog({ locale }: { locale: Locale }) {
 
         <div className="relative px-5 pb-4 tablet:px-8 tablet:pb-6 desktop:px-10 desktop:pb-7">
           {/* The chapter, in one sentence — the same over both pages. */}
-          <p className="max-w-[46ch] font-display text-[1.05rem] italic leading-[1.35] text-album-ink/80 short:hidden tablet:text-[1.35rem] [@media(min-width:640px)_and_(max-height:800px)]:hidden">
+          <p className="max-w-[46ch] font-display text-[1.05rem] leading-[1.35] text-album-ink/80 short:hidden tablet:text-[1.35rem] [@media(min-width:640px)_and_(max-height:800px)]:hidden">
             {directions.story[locale]}
           </p>
           <span aria-hidden="true" className="mt-4 block h-px bg-album-ink/15 short:mt-0 tablet:mt-6 [@media(min-width:640px)_and_(max-height:800px)]:mt-0" />
