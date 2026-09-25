@@ -1,7 +1,9 @@
-import type { Project, ProjectImage } from '@/content/types';
+import { photograph, type Photograph, type Project, type ProjectImage } from '@/content/types';
+import { larkscape } from '@/content/site';
 
 /**
- * THE WORK. Eight projects, in display order.
+ * THE WORK. Eleven projects, in display order — array order IS the
+ * running order everywhere (portfolio, next-project, sitemap).
  *
  * REBUILT AGAINST `images-2`, AND THIS WAS NOT A RE-EXPORT.
  *
@@ -37,76 +39,108 @@ const REGISTRY: readonly Project[] = [
     slug: 'waroeng-andalan',
     name: { en: 'Waroeng Andalan', id: 'Waroeng Andalan' },
     type: { en: 'Restaurant', id: 'Restoran' },
-    location: { en: 'Tangerang', id: 'Tangerang' },
-    year: 2025,
+    location: { en: 'Gading Serpong', id: 'Gading Serpong' },
+    year: 2026,
     area: 182,
     outcome: {
       en: 'The second branch of Waroeng Andalan builds upon the brand’s established identity while offering a significantly larger dining experience. Designed to enhance the everyday dining experience, the space blends warmth, nostalgia, and contemporary comfort, transforming a casual eatery into a memorable culinary destination.',
       id: 'Cabang kedua Waroeng Andalan melanjutkan identitas yang telah dibangun oleh brand ini, kini hadir dengan pengalaman bersantap yang jauh lebih luas. Dirancang untuk meningkatkan pengalaman makan sehari-hari, ruang ini memadukan kehangatan, nostalgia, dan kenyamanan kontemporer, mengubah sebuah warung makan sederhana menjadi destinasi kuliner yang berkesan.',
     },
     /*
-     * The only project whose entire set is exported at full-bleed size —
-     * all ten masters are 4200x2800 / 3220x4025 and run 2–3.5 MB each,
-     * against 0.3–0.8 MB elsewhere. It carries the most real detail per
-     * pixel of anything on the site, which is why four of the five are
-     * allowed a placement above `detail`.
+     * THE SIGNATURE OUTLET, GADING SERPONG. Re-shot as a new set in
+     * September 2026 — the heritage shophouse fit-out: green tile, rattan,
+     * terracotta and brick, with "Waroeng Andalan Signature" on the
+     * facade. The five earlier renders (`waroeng-andalan-01…05`, a
+     * different, modern rattan-clad counter) show another fit-out and are
+     * no longer referenced; their files remain in the folder.
+     *
+     * Eight of the twelve new images, in reading order: the hall, the
+     * building, the way in, the rooms, then the counter and the children's
+     * corner as a pair. Four were left out as near-repeats of the dining
+     * views kept (04_26_23, 04_28_15, 04_29_32, 04_30_53).
+     *
+     * Supplied as ~1300–1650px files at their own ratios, so no frame here
+     * is allowed a placement above `wide` beyond the opening print.
      */
     images: [
       {
-        id: 'waroeng-andalan-01',
+        id: 'waroeng-andalan-s01',
         weight: 'lead',
-        focal: [50, 48],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_19_38 PM.png', width: 1641, height: 923 },
         alt: {
-          en: 'Order counter under a curved rattan canopy, illuminated menu boards above, between exposed brick and green columns.',
-          id: 'Meja pemesanan di bawah kanopi rotan melengkung, papan menu menyala di atasnya, di antara bata ekspos dan kolom hijau.',
+          en: 'Dining hall with rattan chairs, a green-tiled dado and patterned floor, timber screens and shutters along the back wall.',
+          id: 'Ruang makan dengan kursi rotan, lambris keramik hijau dan lantai bermotif, serta sekat kayu dan jendela krepyak di dinding belakang.',
         },
       },
       {
-        id: 'waroeng-andalan-03',
-        weight: 'lead',
-        focal: [48, 55],
-        alt: {
-          en: 'Dining hall with green structural columns, a woven ceiling grid and bar seating along the glazing.',
-          id: 'Ruang makan dengan kolom struktur hijau, plafon anyaman berpetak, dan kursi bar di sepanjang kaca.',
-        },
-        caption: {
-          en: 'The hall, from the entrance.',
-          id: 'Ruang makan, dari pintu masuk.',
-        },
-      },
-      {
-        id: 'waroeng-andalan-02',
+        id: 'waroeng-andalan-s02',
         weight: 'wide',
-        focal: [53, 50],
+        focal: [50, 50],
+        file: { name: 'WhatsApp_Image_2026-08-26_at_5.02.40_PM-removebg-preview.png', width: 1170, height: 936 },
         alt: {
-          en: 'Bar counter along the window wall, with rattan-backed chairs and timber tables beyond.',
-          id: 'Meja bar di sepanjang dinding jendela, dengan kursi sandaran rotan dan meja kayu di baliknya.',
-        },
-        caption: {
-          en: 'Bar counter along the glazing.',
-          id: 'Meja bar di sepanjang kaca.',
+          en: 'Shophouse facade with green shutters, a terracotta tile canopy over the shopfront and the Waroeng Andalan Signature sign.',
+          id: 'Fasad ruko dengan jendela krepyak hijau, kanopi genteng terakota di atas etalase, dan papan nama Waroeng Andalan Signature.',
         },
       },
       {
-        id: 'waroeng-andalan-05',
+        id: 'waroeng-andalan-s03',
         weight: 'wide',
-        focal: [52, 52],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_19_11 PM.png', width: 1392, height: 928 },
         alt: {
-          en: 'Green banquette running the length of the room, against exposed brick, timber panelling and wall lights.',
-          id: 'Bangku hijau memanjang sepanjang ruang, dengan latar bata ekspos, panel kayu, dan lampu dinding.',
+          en: 'Shopfront entrance: timber double doors and a bay window framed in green tile and patterned panels.',
+          id: 'Pintu masuk etalase: pintu ganda kayu dan jendela menjorok berbingkai keramik hijau serta panel bermotif.',
         },
       },
       {
-        id: 'waroeng-andalan-04',
+        id: 'waroeng-andalan-s04',
         weight: 'wide',
-        focal: [45, 55],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_25_17 PM.png', width: 1466, height: 977 },
         alt: {
-          en: 'Private dining room with a long table, a projection screen and louvred windows along one wall.',
-          id: 'Ruang makan privat dengan meja panjang, layar proyeksi, dan jendela krepyak di sepanjang satu dinding.',
+          en: 'Dining room looking toward the street windows, with booth seating, rattan chairs and timber screens.',
+          id: 'Ruang makan menghadap jendela ke jalan, dengan kursi booth, kursi rotan, dan sekat kayu.',
         },
-        caption: {
-          en: 'Private room, screen down.',
-          id: 'Ruang privat, layar diturunkan.',
+      },
+      {
+        id: 'waroeng-andalan-s05',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_30_38 PM.png', width: 1388, height: 925 },
+        alt: {
+          en: 'Dining area against an exposed-brick wall beneath a terracotta tile canopy, with pendant and wall lights.',
+          id: 'Area makan berlatar dinding bata ekspos di bawah kanopi genteng terakota, dengan lampu gantung dan lampu dinding.',
+        },
+      },
+      {
+        id: 'waroeng-andalan-s06',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_23_50 PM.png', width: 1386, height: 924 },
+        alt: {
+          en: 'Service counter and a row of tables beneath a timber-framed ceiling, framed food prints on the wall.',
+          id: 'Meja layanan dan deretan meja di bawah plafon berbingkai kayu, dengan cetakan foto makanan berbingkai di dinding.',
+        },
+      },
+      {
+        id: 'waroeng-andalan-s07',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_19_22 PM.png', width: 1298, height: 865 },
+        alt: {
+          en: 'Timber counter against green wall tiles, with rattan pendants, wall lamps and a timber lattice partition.',
+          id: 'Meja kayu berlatar keramik dinding hijau, dengan lampu gantung rotan, lampu dinding, dan sekat kisi kayu.',
+        },
+      },
+      {
+        id: 'waroeng-andalan-s08',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_26_30 PM.png', width: 1518, height: 1012 },
+        alt: {
+          en: 'Children’s play corner with small tables, a rocking horse and colourful shapes on the wall.',
+          id: 'Sudut bermain anak dengan meja kecil, kuda goyang, dan bentuk-bentuk berwarna di dinding.',
         },
       },
     ],
@@ -625,6 +659,248 @@ const REGISTRY: readonly Project[] = [
     ],
     published: true,
   },
+
+  {
+    slug: 'capt-bubbles-laundry',
+    name: { en: 'Capt Bubbles Laundry', id: 'Capt Bubbles Laundry' },
+    type: { en: 'Laundry', id: 'Laundry' },
+    location: { en: 'Bogor Utara', id: 'Bogor Utara' },
+    year: 2026,
+    outcome: {
+      en: 'Capt Bubbles Laundry gives a round-the-clock service a clear architectural identity. On the street, a tall blue volume carries the brand above a fully glazed ground floor, so the working interior stays visible by day and becomes a lit shopfront after dark. Inside, stacked washers and dryers line both long walls of a single hall, leaving a central run of tables and stools for folding and waiting. High louvred openings, ceiling fans and continuous linear lighting keep the room bright and airy, while a restrained grey-and-white palette lets the brand’s blue and yellow carry the space.',
+      id: 'Capt Bubbles Laundry memberi layanan 24 jam sebuah identitas arsitektural yang tegas. Dari jalan, massa biru yang menjulang membawa identitas merek di atas lantai dasar berdinding kaca penuh, sehingga aktivitas di dalamnya tetap terlihat di siang hari dan menjadi etalase yang menyala saat malam. Di dalam, mesin cuci dan pengering bertumpuk berjajar di kedua dinding panjang sebuah ruang utama, menyisakan deretan meja dan bangku di tengah untuk melipat dan menunggu. Bukaan krepyak di bagian atas, kipas plafon, dan lampu linear yang menerus menjaga ruang tetap terang dan lapang, sementara palet abu-abu dan putih yang tenang memberi panggung bagi biru dan kuning khas mereknya.',
+    },
+    /*
+     * Four supplied images: the facade by day, the machine hall from
+     * both ends as a pair, and the facade again at dusk. No floor area
+     * was provided, so none is shown.
+     */
+    images: [
+      {
+        id: 'capt-bubbles-laundry-01',
+        weight: 'lead',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 22, 2026, 04_02_24 PM.png', width: 1536, height: 1024 },
+        alt: {
+          en: 'Capt Bubbles Laundry by day: a three-storey facade in blue with the mascot sign, 24-hour signage and a pylon sign at the street.',
+          id: 'Capt Bubbles Laundry di siang hari: fasad tiga lantai berwarna biru dengan papan maskot, tanda buka 24 jam, dan papan tiang di tepi jalan.',
+        },
+      },
+      {
+        id: 'capt-bubbles-laundry-02',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'Scene 17.png', width: 1309, height: 830 },
+        alt: {
+          en: 'Self-service hall lined with stacked washers and dryers, folding tables and blue baskets down the middle.',
+          id: 'Ruang swalayan berjajar mesin cuci dan pengering bertumpuk, dengan meja lipat dan keranjang biru di tengah.',
+        },
+      },
+      {
+        id: 'capt-bubbles-laundry-03',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'Scene 20.png', width: 1309, height: 830 },
+        alt: {
+          en: 'The machine hall from the other side, the Captain Bubbles sign on the far wall above shelving.',
+          id: 'Ruang mesin dari sisi lain, papan Captain Bubbles di dinding ujung di atas rak.',
+        },
+      },
+      {
+        id: 'capt-bubbles-laundry-04',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 22, 2026, 04_06_54 PM.png', width: 1536, height: 1024 },
+        alt: {
+          en: 'The same facade at dusk, the shopfront lit.',
+          id: 'Fasad yang sama saat senja, dengan etalase menyala.',
+        },
+      },
+    ],
+    published: true,
+  },
+
+  {
+    slug: 'peeps-cafe',
+    name: { en: 'Peeps Cafe', id: 'Peeps Cafe' },
+    type: { en: 'Cafe', id: 'Kafe' },
+    location: { en: 'Depok', id: 'Depok' },
+    year: 2026,
+    area: 228.9,
+    outcome: {
+      en: 'Peeps Cafe pairs a calm palette of grey concrete, pale timber and upholstered banquettes with a quiet nod to the markets. A ticker of world-city clocks runs above the counter, and live charts sit on the walls of the dining rooms. Full-height glazing brings daylight to the window seats, while track and linear lighting give the deeper rooms an even, gallery-like clarity. From the street, a perforated screen wall and planting soften the dark storefront, and at the rear a covered terrace under a slatted roof carries the cafe outdoors.',
+      id: 'Peeps Cafe memadukan palet yang tenang — beton abu-abu, kayu berwarna terang, dan bangku berlapis jok — dengan sentuhan halus dari dunia pasar modal. Deretan jam kota-kota dunia membentang di atas meja pemesanan, dan grafik pasar tampil di dinding ruang makan. Kaca setinggi plafon mengalirkan cahaya alami ke tempat duduk di sisi jendela, sementara lampu rel dan lampu linear memberi ruang-ruang di bagian dalam pencahayaan yang merata dan jernih, layaknya sebuah galeri. Dari jalan, dinding roster dan tanaman melunakkan etalase yang gelap, dan di bagian belakang, teras beratap kisi membawa suasana kafe ke luar ruang.',
+    },
+    /*
+     * All seven supplied images, each a distinct space: the street
+     * front, the hall, the counter, the window seats, the rear room, then
+     * the merchandise corner and the terrace as a pair.
+     */
+    images: [
+      {
+        id: 'peeps-cafe-01',
+        weight: 'lead',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_01_43 PM.png', width: 1672, height: 941 },
+        alt: {
+          en: 'Peeps Cafe from the street: a dark storefront under the Peeps Cafe sign, a perforated screen wall and planters along the pavement, mesh-clad floors above.',
+          id: 'Peeps Cafe dari jalan: etalase gelap di bawah papan nama Peeps Cafe, dinding roster dan tanaman di sepanjang trotoar, lantai atas berbalut jaring.',
+        },
+      },
+      {
+        id: 'peeps-cafe-02',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_04_37 PM.png', width: 1358, height: 1086 },
+        alt: {
+          en: 'Main dining hall with timber chairs, grey banquettes and track lighting, a merchandise wall and a market-chart screen beyond.',
+          id: 'Ruang makan utama dengan kursi kayu, bangku abu-abu, dan lampu rel, dinding merchandise serta layar grafik pasar di baliknya.',
+        },
+      },
+      {
+        id: 'peeps-cafe-03',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_06_32 PM.png', width: 1176, height: 941 },
+        alt: {
+          en: 'Order counter beneath a ticker of world clocks, with backlit shelving, an espresso machine and the Peeps Cafe sign.',
+          id: 'Meja pemesanan di bawah papan jam dunia, dengan rak berlampu, mesin espreso, dan papan nama Peeps Cafe.',
+        },
+      },
+      {
+        id: 'peeps-cafe-04',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_08_15 PM.png', width: 1255, height: 941 },
+        alt: {
+          en: 'Seating along the glazed frontage: timber chairs and banquettes under linear lights.',
+          id: 'Tempat duduk di sepanjang muka kaca: kursi kayu dan bangku di bawah lampu linear.',
+        },
+      },
+      {
+        id: 'peeps-cafe-05',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_11_54 PM.png', width: 1176, height: 941 },
+        alt: {
+          en: 'Rear dining room with rows of tables facing a wall screen that shows a market chart.',
+          id: 'Ruang makan belakang dengan deretan meja menghadap layar dinding yang menampilkan grafik pasar.',
+        },
+      },
+      {
+        id: 'peeps-cafe-06',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_10_09 PM.png', width: 1176, height: 941 },
+        alt: {
+          en: 'Merchandise corner with partner-brand displays, shelving and banquette seating.',
+          id: 'Sudut merchandise dengan display mitra, rak, dan bangku.',
+        },
+      },
+      {
+        id: 'peeps-cafe-07',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_14_45 PM.png', width: 1176, height: 941 },
+        alt: {
+          en: 'Covered terrace with a slatted roof, wall lights, planting and metal chairs.',
+          id: 'Teras beratap kisi dengan lampu dinding, tanaman, dan kursi logam.',
+        },
+      },
+    ],
+    published: true,
+  },
+
+  {
+    slug: 'stoma-museum',
+    name: { en: 'Stoma Museum', id: 'Stoma Museum' },
+    type: { en: 'Museum', id: 'Museum' },
+    location: { en: 'Bogor Barat', id: 'Bogor Barat' },
+    year: 2026,
+    area: 456,
+    outcome: {
+      en: 'Stoma Museum turns a house-scale building into a clear, approachable place to learn. Behind a white columned portico, the interior is kept quiet — white walls, pale timber floors and arched openings — so the exhibition can lead. A continuous green band curves along walls and ceilings, carrying integrated light and drawing visitors from the entrance gallery past the history and data walls to a circular central installation. Orange feature walls and large-scale typography mark key moments in the story, while a recording studio and a glazed meeting room make the building a working space as well.',
+      id: 'Stoma Museum mengubah bangunan berskala rumah menjadi ruang belajar yang jelas dan mudah didekati. Di balik serambi berkolom putih, interiornya sengaja dibuat tenang — dinding putih, lantai kayu terang, dan bukaan lengkung — agar pameran menjadi pusat perhatian. Pita hijau yang menerus melengkung di sepanjang dinding dan plafon, membawa pencahayaan terintegrasi sekaligus menuntun pengunjung dari galeri pintu masuk, melewati dinding sejarah dan data, menuju instalasi melingkar di tengah ruang. Dinding aksen oranye dan tipografi berskala besar menandai momen-momen penting dalam alur cerita, sementara studio rekaman dan ruang rapat berdinding kaca menjadikan bangunan ini juga sebuah ruang kerja.',
+    },
+    /*
+     * All seven supplied images: the building, the central installation,
+     * the history and data walls and the entrance gallery, then the
+     * recording studio and meeting room as a pair.
+     */
+    images: [
+      {
+        id: 'stoma-museum-01',
+        weight: 'lead',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_55_09 PM.png', width: 1554, height: 1012 },
+        alt: {
+          en: 'The museum building: a pitched-roof house with a white columned portico, the Ostomy Museum of Indonesia sign on its facade.',
+          id: 'Bangunan museum: rumah beratap pelana dengan serambi berkolom putih, papan Ostomy Museum of Indonesia di fasadnya.',
+        },
+      },
+      {
+        id: 'stoma-museum-02',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 05_48_22 PM.png', width: 1446, height: 964 },
+        alt: {
+          en: 'The central installation: a circular suspended display of ostomy pouches around a pedestal, orange feature walls beyond.',
+          id: 'Instalasi utama: display melingkar kantong stoma yang digantung mengelilingi sebuah podium, dengan dinding aksen oranye di baliknya.',
+        },
+      },
+      {
+        id: 'stoma-museum-03',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 05_47_25 PM.png', width: 1402, height: 935 },
+        alt: {
+          en: 'The history wall, “Sejarah Perkembangan Stoma”: a timeline of framed panels beneath a curved green canopy.',
+          id: 'Dinding sejarah, “Sejarah Perkembangan Stoma”: lini masa panel berbingkai di bawah kanopi hijau melengkung.',
+        },
+      },
+      {
+        id: 'stoma-museum-04',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 05_46_55 PM.png', width: 1460, height: 973 },
+        alt: {
+          en: 'Entrance gallery: an arched opening onto an orange wall with a line drawing of the body, a mannequin and an information kiosk.',
+          id: 'Galeri pintu masuk: bukaan lengkung menuju dinding oranye berilustrasi garis tubuh manusia, manekin, dan kios informasi.',
+        },
+      },
+      {
+        id: 'stoma-museum-05',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 05_47_51 PM.png', width: 1535, height: 1023 },
+        alt: {
+          en: 'The data and procedure wall, with a circular infographic and a sequence of illustrated stages.',
+          id: 'Dinding data dan tahapan, dengan infografik melingkar dan rangkaian tahapan berilustrasi.',
+        },
+      },
+      {
+        id: 'stoma-museum-06',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 05_49_23 PM.png', width: 1496, height: 997 },
+        alt: {
+          en: 'Recording studio with a round table, microphones, lighting umbrellas and an illuminated museum sign.',
+          id: 'Studio rekaman dengan meja bundar, mikrofon, payung lampu, dan papan nama museum yang menyala.',
+        },
+      },
+      {
+        id: 'stoma-museum-07',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 05_49_02 PM.png', width: 1476, height: 984 },
+        alt: {
+          en: 'Meeting room with a timber table, black chairs, a projection screen and glazed partitions.',
+          id: 'Ruang rapat dengan meja kayu, kursi hitam, layar proyeksi, dan partisi kaca.',
+        },
+      },
+    ],
+    published: true,
+  },
 ];
 
 export const projects: readonly Project[] = REGISTRY.filter((p) => p.published);
@@ -650,4 +926,31 @@ export function findImage(id: string): { project: Project; image: ProjectImage }
 export function nextProject(slug: string): Project | undefined {
   const index = projects.findIndex((project) => project.slug === slug);
   return index === -1 ? undefined : projects[(index + 1) % projects.length];
+}
+
+/* ------------------------------------------------------------------ *
+ * THE ARCHIVE — the album overture's wider cut
+ * ------------------------------------------------------------------ */
+
+/**
+ * The album overture's Larkscapes prints. The renders themselves are
+ * defined once, in `larkscapesLibrary` (content/site.ts), which the New
+ * Directions section and announcement also read — these are named picks
+ * from it, not second definitions.
+ */
+export const ARCHIVE = {
+  sanza24: larkscape('Sanza Villa - Bali/24.png'),
+  th19: larkscape('TH Villa - Bali/19.png'),
+} as const satisfies Record<string, Photograph>;
+
+/** A published frame as a whole photograph, by id. */
+export function framePhotograph(id: string): Photograph {
+  const found = findImage(id);
+  if (!found) throw new Error(`Unknown frame ${id}`);
+  return photograph(found.project, found.image);
+}
+
+/** Every photograph of a project, in its running order. */
+export function projectPhotographs(project: Project): readonly Photograph[] {
+  return project.images.map((image) => photograph(project, image));
 }

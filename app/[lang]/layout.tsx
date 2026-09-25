@@ -3,12 +3,12 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import '@/app/globals.css';
 
-import { isLocale, organisationJsonLd } from '@/lib/site';
-import { MotionProvider } from '@/lib/motion';
+import { displayFace, isLocale, organisationJsonLd, textFace } from '@/lib/site';
+import { INTRO_SCRIPT, MotionProvider } from '@/lib/motion';
 import { LOCALES, type Locale } from '@/content/types';
 import { site, ui } from '@/content/site';
-import { SkipLink } from '@/components/ui';
-import { Cursor, Footer, Header, Preloader, ScrollRail } from '@/components/chrome';
+import { Lightbox, SkipLink } from '@/components/ui';
+import { Announcement, Cursor, Footer, Header, Preloader, ScrollRail } from '@/components/chrome';
 
 /**
  * THE APPLICATION SHELL.
@@ -68,8 +68,18 @@ export default async function LocaleLayout({
   const locale: Locale = lang;
 
   return (
-    <html lang={locale}>
+    /* `suppressHydrationWarning` covers exactly one thing: the
+       `data-intro` attribute the head script below writes before React
+       hydrates. It does not reach into children. */
+    <html
+      lang={locale}
+      className={`${displayFace.variable} ${textFace.variable}`}
+      suppressHydrationWarning
+    >
       <body className="flex min-h-screen flex-col bg-paper font-text text-ink">
+        {/* Decides whether the overture plays, before first paint. Must
+            stay the first thing in <body>. See `INTRO_SCRIPT`. */}
+        <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
         <script
           type="application/ld+json"
           /* Serialised from a typed object literal — no user input
@@ -92,12 +102,13 @@ export default async function LocaleLayout({
         */}
         <noscript>
           <style>{`
-            main *, footer * {
+            header *, main *, footer * {
               opacity: 1 !important;
               transform: none !important;
               clip-path: none !important;
               filter: none !important;
             }
+            [data-overture] { display: none !important; }
           `}</style>
         </noscript>
 
@@ -115,6 +126,13 @@ export default async function LocaleLayout({
           </main>
 
           <Footer locale={locale} />
+
+          {/* The one photo lightbox. Any print on any page opens it. */}
+          <Lightbox />
+
+          {/* The studio's New Directions announcement — shown once a
+              session after the intro, reopened from the header. */}
+          <Announcement locale={locale} />
         </MotionProvider>
 
         {/* Grain sits above everything except the menu and the cursor.

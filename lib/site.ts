@@ -1,3 +1,4 @@
+import { Cormorant_Garamond, Hanken_Grotesk } from 'next/font/google';
 import type { Metadata } from 'next';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/content/types';
 import { site } from '@/content/site';
@@ -15,12 +16,36 @@ import { site } from '@/content/site';
  * ------------------------------------------------------------------ */
 
 /*
- * NO WEBFONT IS LOADED. Both tiers are Helvetica, declared as a system
- * stack in `--font-helvetica` in `app/globals.css`; `font-display` and
- * `font-text` both resolve to it. There is nothing for `next/font` to
- * host and no `--font-*` class for the `<html>` element to carry, so
- * the loaders and the `fontVariables` export that fed them are gone.
+ * TWO FACES, SELF-HOSTED BY `next/font` AT BUILD — no request to a font
+ * service at runtime, and a metric-matched fallback while they load, so
+ * the swap does not shift the page.
+ *
+ *   DISPLAY  Cormorant Garamond — a high-contrast Garamond cut for large
+ *            sizes. The wordmark, headlines and project names: the voice
+ *            of an architecture monograph, where Helvetica had read as
+ *            interface. Its italic carries the hero's second line.
+ *   TEXT     Hanken Grotesk — a neutral grotesk in the register the site
+ *            already had, but the SAME on every platform: the Helvetica
+ *            stack fell back to Arial on Windows and Android.
+ *
+ * Chosen by setting candidates side by side on the site's own dark ground
+ * and on album paper (Newsreader read as a newspaper, Fraunces as soft,
+ * Instrument Serif as condensed). The layout applies the two variables to
+ * `<html>`; `--font-display` / `--font-text` in globals.css resolve them.
  */
+export const displayFace = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  style: ['normal', 'italic'],
+  variable: '--font-cormorant',
+  display: 'swap',
+});
+
+export const textFace = Hanken_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-hanken',
+  display: 'swap',
+});
 
 /* ------------------------------------------------------------------ *
  * Locale

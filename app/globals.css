@@ -1,5 +1,18 @@
 @import 'tailwindcss';
 
+/* Where the horizontal portfolio's text column carries the facts itself —
+   the complement of the laptop composition in `work-rig`. */
+@custom-variant roomy (@media (min-width: 1280px) and (min-height: 740.02px));
+
+/* Compact portfolio. `frame-tall` asks the SPREAD'S OWN SPACE (a size
+   container), not the screen, which arrangement of prints shows the
+   photographs larger: the tall one (lead print across the top, two
+   beneath) wins until the space is about 1.55 times as wide as it is
+   tall — where 0.94 × 0.9h = 0.54w. A short phone also sets the caption
+   a size down rather than squeezing the spread. */
+@custom-variant frame-tall (@container work-frame (max-aspect-ratio: 3/2));
+@custom-variant short (@media (max-width: 1023px) and (max-height: 700px));
+
 @source '../app';
 @source '../components';
 @source '../content';
@@ -68,6 +81,23 @@
   --color-bone-ink-2: #55524c;
   --color-bone-line: rgba(18, 18, 20, 0.12);
 
+  /* THE PRINT. The border every photograph is mounted in — a warm
+     off-white, the colour of an uncoated fine-art stock rather than of a
+     screen's #fff, which would glare against the near-black paper and
+     make the photograph inside look grey by comparison. */
+  --color-print: #efece5;
+  --color-print-well: #dcd8cf;
+
+  /* THE ALBUM. The overture's object: warm uncoated paper a step darker
+     than the prints so a print's border reads against it, the edges of
+     the leaves beneath, charcoal book cloth, and the ink the title page
+     is set in. Used by the overture and nowhere else. */
+  --color-album: #e3dccf;
+  --color-album-edge: #d3cab9;
+  --color-cloth: #1f1d1a;
+  --color-album-ink: #1e1c19;
+  --color-album-ink-2: #6c655a;
+
   --color-transparent: transparent;
   --color-current: currentColor;
 
@@ -102,23 +132,21 @@
   /* ---------------------------------------------------------------
      TYPE
 
-     One family throughout: Helvetica. Display and text are the same
-     stack, so the two tiers separate on size, weight and measure alone
-     — there is no letterform contrast to lean on any more, which is
-     why the display sizes carry the tighter tracking below.
+     Two faces, self-hosted by next/font (see lib/site.ts):
 
-     No webfont is loaded. Helvetica is resident on macOS/iOS, Arial
-     stands in on Windows and Android, and Helvetica Neue is listed
-     first for the older Apple machines that only carry that cut.
+       display  Cormorant Garamond — wordmark, headlines, project names.
+                The voice of an architecture monograph; its italic carries
+                the hero's second line.
+       text     Hanken Grotesk — everything read at body size and every
+                label. Neutral, and the same on every platform.
 
-     The display tier is fluid. Discrete display type is the tell of a
-     templated site: correct at three widths and slightly wrong at every
-     other one. Reading sizes stay discrete — body copy wants a stable
-     measure, not a size that drifts under the reader.
+     Helvetica stays in the stack as the fallback while the faces load.
+     The display tier is fluid; reading sizes stay discrete — body copy
+     wants a stable measure, not a size that drifts under the reader.
      --------------------------------------------------------------- */
   --font-helvetica: 'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', sans-serif;
-  --font-display: var(--font-helvetica);
-  --font-text: var(--font-helvetica);
+  --font-display: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  --font-text: var(--font-hanken), var(--font-helvetica);
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -146,6 +174,13 @@
   --text-statement--line-height: 1.14;
   --text-statement--letter-spacing: -0.015em;
 
+  /* A project's name in the horizontal portfolio's text column. Sized
+     by that column (14–22rem), not by the page: `statement` ran to 52px
+     at 1024px and set "Waroeng Andalan" in a column 187px wide. */
+  --text-work: clamp(1.9rem, 1rem + 1.75vw, 3rem);
+  --text-work--line-height: 1.12;
+  --text-work--letter-spacing: -0.015em;
+
   --text-display: clamp(2.75rem, 1.1rem + 7vw, 6rem);
   --text-display--line-height: 0.98;
   --text-display--letter-spacing: -0.02em;
@@ -158,7 +193,9 @@
      that column holds. Leading opens slightly to 0.98 because the line
      now wraps: 0.94 was set for two authored lines and collides on
      three. */
-  --text-hero: clamp(2.5rem, 1rem + 4.4vw, 4.75rem);
+  /* Re-scaled for Cormorant, whose x-height is well below Helvetica's:
+     the same measure at ~10% more size reads at the same weight. */
+  --text-hero: clamp(2.75rem, 1.1rem + 4.9vw, 5.25rem);
   --text-hero--line-height: 0.98;
   --text-hero--letter-spacing: -0.025em;
 
@@ -176,7 +213,10 @@
      the line is ever drawn is 1.05x its rest width. At 21vw that pushed
      the final "o" past the container and `overflow-hidden` clipped it.
      19vw x 1.05 lands just inside the measure at every width. */
-  --text-mega: clamp(3rem, -0.5rem + 19vw, 20rem);
+  /* 22vw for Cormorant: the serif sets "Lark Studio" about 20% narrower
+     than Helvetica did, so the old 19vw left a fifth of the line empty.
+     22vw × the 1.05 scrub still lands inside the measure. */
+  --text-mega: clamp(3rem, -0.5rem + 22vw, 23rem);
   --text-mega--line-height: 0.86;
   --text-mega--letter-spacing: -0.03em;
 
@@ -220,6 +260,8 @@
      its end state, and the reduced-motion rule collapses it to nothing. */
   --animate-curtain: lark-curtain 0.8s cubic-bezier(0.76, 0, 0.24, 1) forwards;
   --animate-arrive: lark-arrive 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+  /* The overture's spine — CSS so it draws from the first painted frame. */
+  --animate-spine: lark-spine 2.2s cubic-bezier(0.76, 0, 0.24, 1) 0.05s both;
 }
 
 /* Non-utility tokens: referenced in CSS, never exposed as classes. */
@@ -251,8 +293,25 @@
    * scroll-linked value then reports progress 1 at scroll position 0,
    * and the whole hero renders at opacity 0 on arrival.
    */
+  /*
+   * `scrollbar-gutter: stable` is what lets the overture lock scroll
+   * without the page jumping sideways when it unlocks. Where scrollbars
+   * take space (Windows, Linux, macOS with "always show"), hiding the
+   * bar widened the viewport by its width and every fixed and centred
+   * element shifted 15px at the exact moment the hero was revealed.
+   */
+  /*
+   * `position: relative` because every scroll-linked value on the site is
+   * measured by Framer against the document element, and it computes a
+   * target's offset through `offsetTop` chains that are only reliable
+   * when the container is positioned — it warns on every page otherwise.
+   * Nothing on the site is absolutely positioned against the initial
+   * containing block, so this moves nothing.
+   */
   html {
+    position: relative;
     overflow-x: clip;
+    scrollbar-gutter: stable;
     scroll-behavior: auto;
     scroll-padding-top: 6rem;
     -webkit-text-size-adjust: 100%;
@@ -374,6 +433,11 @@
 
   /* The arriving page rises into place. Small — 28px over 900ms — so a
      navigation reads as a page settling rather than as a slide. */
+  /* Ends on `transform: none`, NOT `translate3d(0,0,0)`. The
+     animation fills forwards, so its last keyframe is what the page
+     wrapper keeps for the rest of the visit — and a resting 3D
+     transform on the element holding the entire page promoted the whole
+     document to one composited layer, many screens tall, for good. */
   @keyframes lark-arrive {
     from {
       opacity: 0;
@@ -381,7 +445,35 @@
     }
     to {
       opacity: 1;
-      transform: translate3d(0, 0, 0);
+      transform: none;
+    }
+  }
+
+  /* The overture's spine: the hairline down the centre of a closed
+     album, drawn before any script has run. It thins away as the pages
+     open from it. */
+  @keyframes lark-spine {
+    0% {
+      transform: scaleY(0);
+      opacity: 0;
+    }
+    30% {
+      transform: scaleY(1);
+      opacity: 0.9;
+    }
+    100% {
+      transform: scaleY(1);
+      opacity: 0;
+    }
+  }
+
+  /* The overlay's last resort: if the sequence never runs to its exit —
+     a script error, a hydration failure — it gets out of the way on its
+     own rather than leaving the site as a black rectangle. */
+  @keyframes lark-failsafe {
+    to {
+      visibility: hidden;
+      pointer-events: none;
     }
   }
 
@@ -395,7 +487,48 @@
     }
   }
 
+  /* ----------------------------------------------------------------
+     THE OVERTURE GATE — see INTRO_SCRIPT in lib/motion.tsx.
+     The overlay is in the server HTML; whether it is ever DRAWN is
+     decided here, before first paint, from the attribute the head script
+     writes. No attribute means no JavaScript, and that means no overlay.
+     ---------------------------------------------------------------- */
+  html:not([data-intro='play']) [data-overture] {
+    display: none;
+  }
+  html[data-intro='play']:has([data-overture]),
+  html.is-held {
+    overflow: hidden;
+  }
+  [data-overture] {
+    animation: lark-failsafe 0s linear 20s forwards;
+  }
+
+  /* ----------------------------------------------------------------
+     THE PORTFOLIO STOPS. On touch screens below 1024px each project's
+     scroll position is a snap point, so a flick comes to rest with a
+     project dead centre. Proximity, not mandatory: a slow drag is never
+     fought, and the page above and below never snaps at all. Switched
+     off while the page is being moved by script (`scrollToY`), since a
+     frame-by-frame smooth scroll would otherwise be re-snapped at every
+     step.
+     ---------------------------------------------------------------- */
+  @media (max-width: 1023px) and (pointer: coarse) {
+    html:has(.work-snap) {
+      scroll-snap-type: y proximity;
+    }
+  }
+  html.snap-off {
+    scroll-snap-type: none !important;
+  }
+  .work-snap {
+    scroll-snap-align: start;
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    [data-overture] {
+      display: none !important;
+    }
     *,
     *::before,
     *::after {
@@ -413,6 +546,17 @@
   /* Coarse pointers get no custom cursor and no hover-only affordance. */
   @media (pointer: coarse) {
     .cursor {
+      display: none !important;
+    }
+  }
+
+  /* The grain is a full-viewport `mix-blend-mode` layer, which makes the
+     GPU re-blend the entire screen against everything beneath it on
+     every scrolled frame. On a desktop GPU that is nothing; on a phone
+     it is a measurable share of every frame, spent on texture a 6-inch
+     screen at 3x cannot resolve anyway. */
+  @media (max-width: 1023px), (pointer: coarse) {
+    .grain {
       display: none !important;
     }
   }
@@ -492,6 +636,89 @@
     transform-origin: left;
     transform: scaleX(1);
   }
+}
+
+/*
+ * THE PORTFOLIO RIG — the horizontal work index's geometry, desktop only.
+ *
+ * Every dimension is derived from the viewport in CSS, so the spacer is
+ * the right height in the first painted frame and nothing is measured.
+ * What changed from the vw-only rig:
+ *
+ *   THE IMAGE IS SIZED BY ITS OWN RATIO. The frame was whatever was left
+ *   of a 76vw panel after a 24% text column, at full stage height — a
+ *   ~1.2:1 box that cropped a fifth off both sides of every 3:2 render.
+ *   It is now exactly 3:2, as large as the stage height or the width
+ *   allows, whichever binds first. The render is shown whole.
+ *
+ *   THE PANEL IS CENTRED AT EVERY STOP. Travel used to be `track − 100vw`,
+ *   which is not a multiple of the panel pitch, so the current project
+ *   crept right by ~2vw per step and the last one sat 20vw off the edge.
+ *   Travel is now exactly `(n − 1) × pitch` with a centring edge, so
+ *   progress `i / (n − 1)` puts panel `i` dead centre, first to last.
+ *
+ *   THE TEXT COLUMN HAS A MEASURE, NOT A PERCENTAGE. 24% of the panel
+ *   was 187px on a 1024px laptop — five words a line. It is clamped
+ *   between 14rem and 22rem.
+ */
+@utility work-rig {
+  /* ---- COMPACT, below 1024px: one project per screen, frame over
+     caption. The panel is the screen less a margin each side; the
+     neighbours show as a sliver of `side − gap`. A step of 70svh per
+     project, so a flick on glass moves one project rather than three. */
+  --work-side: 1.25rem;
+  --work-gap: 0.625rem;
+  --work-head: 3.25rem;
+  --work-foot: 4rem;
+  --work-panel: calc(100vw - 2 * var(--work-side));
+  --work-step: 70svh;
+  @media (min-width: 640px) {
+    --work-side: 3rem;
+    --work-gap: 1.25rem;
+    --work-head: 4.5rem;
+    --work-foot: 4.5rem;
+  }
+
+  /* ---- DESKTOP, 1024px up: text column beside a 3:2 frame. Travel is
+     1:1 with the page, so the step IS the pitch. */
+  @media (min-width: 1024px) {
+    --work-meta: clamp(14rem, 8rem + 10vw, 22rem);
+    --work-inner: clamp(2rem, 2.5vw, 3.5rem);
+    --work-side: clamp(3rem, 16vw - 6rem, 12rem);
+    --work-gap: clamp(1.5rem, 3vw, 4.5rem);
+    --work-head: 8rem;
+    --work-foot: 5.5rem;
+    /* The facts row under the frame — the laptop composition (below).
+       Zero where the text column has room to carry the facts itself. */
+    --work-facts: 5rem;
+    --work-image: min(
+      (var(--work-stage) - var(--work-facts)) * 1.5,
+      100vw - 2 * var(--work-side) - var(--work-meta) - var(--work-inner)
+    );
+    --work-image-h: calc(var(--work-image) / 1.5);
+    --work-height: calc(var(--work-image-h) + var(--work-facts));
+    --work-panel: calc(var(--work-meta) + var(--work-inner) + var(--work-image));
+    --work-step: calc(var(--work-panel) + var(--work-gap));
+  }
+
+  /*
+   * THE LAPTOP COMPOSITION. Below 1280px wide, or 740px tall, the frame
+   * is small enough that name, sentence and facts no longer fit beside
+   * it: measured at 1024x768 the longest sentences overran the column by
+   * up to 76px and ran into the facts. Instead the facts leave the text
+   * column and sit on a hairline directly under the frame — the house
+   * rule of the same furniture under every photograph.
+   */
+  @media (min-width: 1280px) and (min-height: 740.02px) {
+    --work-facts: 0px;
+  }
+
+  /* ---- DERIVED, at every size. */
+  --work-stage: calc(100svh - var(--work-head) - var(--work-foot));
+  --work-edge: calc((100vw - var(--work-panel)) / 2);
+  --work-travel: calc((var(--work-count) - 1) * (var(--work-panel) + var(--work-gap)));
+  --work-span: calc((var(--work-count) - 1) * var(--work-step));
+  --work-length: calc(100svh + var(--work-span));
 }
 
 /* Film grain: a static SVG turbulence tile at very low opacity over the

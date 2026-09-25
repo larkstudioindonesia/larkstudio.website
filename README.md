@@ -53,7 +53,7 @@ Four rules hold the shape:
 
 ## The horizontal portfolio
 
-The homepage's centrepiece. Eight projects laid side by side and
+The homepage's centrepiece. Eleven projects laid side by side and
 travelled through horizontally, driven by ordinary vertical scroll.
 
 The section is a tall spacer with a `sticky` viewport inside it; the
@@ -63,40 +63,45 @@ That is what GSAP ScrollTrigger's pin + scrub does, and Framer Motion's
 runtime would mean a second source of truth for scroll position next to
 the Lenis instance already smoothing it.
 
-**The height is CSS, not measured.** Panel widths are viewport units, so
-the travel is known without touching the DOM:
+**One rig, every breakpoint.** Every length is a custom property in the
+`work-rig` utility (globals.css):
 
 ```
-track  = n·76vw + (n−1)·4vw + 2·4vw
-travel = track − 100vw          →  544vw for eight projects
-height = 100vh + travel         →  one vertical pixel moves the track one
-                                   horizontal pixel
+travel = (n − 1) · (panel + gap)    panel i is centred at stop i
+span   = (n − 1) · step             vertical scroll for the whole journey
+height = 100svh + span
 ```
 
-A measured height would need a layout pass, a ResizeObserver and a reflow
-on every resize, and would shift the page on first paint.
+- **Desktop (≥1024px):** a text column beside an exact 3:2 frame;
+  `step = panel + gap`, so one vertical pixel moves the track one
+  horizontal pixel. Below 1280px wide or 740px tall the facts move to a
+  hairline under the frame (the laptop composition).
+- **Compact (<1024px):** one project per screen, frame over caption. The
+  frame fills whatever the caption leaves, through a size container, and
+  takes the 4:5 or 3:2 crop depending on which can be shown larger while
+  still whole. `step = 70svh`, and on touch screens every stop is a
+  `scroll-snap` point (proximity), so a flick comes to rest centred.
 
-Navigation: wheel and vertical trackpad (native), **horizontal**
-trackpad, drag, arrow keys while the section owns the screen, tick
-marks, and prev/next buttons. All of them move the **page** through
-`scrollToY()` — the track is a pure function of scroll position, so
-moving it directly would desynchronise the two the moment the gesture
-ended.
+**Progress is measured, not taken from `useScroll`.** Element progress
+divides by the live viewport height, which on a phone changes as the
+toolbar collapses. Here progress is `(scrollY − top) / span`: the
+section's layout top (offset chain, never `getBoundingClientRect`,
+which includes the page's arrival transform) and the span are measured
+on mount and whenever the body resizes. Every stop lands within a pixel.
 
-**Drag must not capture the pointer on press.** An earlier revision
-called `setPointerCapture` in `pointerdown`. Capture retargets both
-`pointerdown` and `pointerup` to the capturing element, and the browser
-fires `click` on the nearest common ancestor of the two — so every click
-inside the portfolio was delivered to the sticky container instead of to
-what was under the cursor. View Project, all eight panels, both arrows
-and all eight tick marks did nothing on desktop while looking perfectly
-interactive. Capture is now taken only after the pointer has travelled
-6px, and the click that ends a real drag is swallowed in the capture
-phase.
+Navigation: native vertical scroll on every input, horizontal trackpad,
+a sideways swipe on glass, mouse drag, arrow keys, ticks (a progress
+rail on phones) and prev/next buttons. All of them move the **page**
+through `scrollToY()`; the track is a pure function of scroll position.
+A swipe is dispatched on the next frame, because Lenis handles the same
+`touchend` on the window afterwards and would cancel a scroll started
+inside it.
 
-**Below 1024px none of this applies:** auto height, static viewport,
-column track, zero translate. Hijacking horizontal scroll on a touch
-device fights the OS gesture and loses.
+**Drag must not capture the pointer on press.** Capture retargets both
+`pointerdown` and `pointerup`, and the browser fires `click` on their
+common ancestor — every link in the portfolio went dead. Capture is
+taken only after 6px of travel, and the click that ends a real drag is
+swallowed in the capture phase.
 
 ## Composition
 
@@ -123,57 +128,32 @@ travelling along.
 
 ## Images
 
-`content/projects.ts` carries eight projects and 36 frames. Every frame was
-reviewed individually — resolution, real detail per pixel, subject position —
-and carries the result:
+**The photograph is the artwork; the frame adapts to it.** Every project
+photograph on the site is presented as a `Print` (`components/ui`): the
+whole render at its own ratio, in an off-white border, scaled DOWN to fit
+the space it is given. Nothing is cropped to fill a rectangle and nothing
+is enlarged. Every print can be tapped open in the shared `Lightbox`,
+which grows it from where it lies (a hand-rolled FLIP — no layout
+projection) and shows the full file uncropped.
 
-```ts
-{ id: 'amadya-01', weight: 'lead', focal: [50, 46], alt: {…} }
-```
+**Only the `-3x2` exports are used.** They are each render's own
+composition (2700×1800; leads 4200×2800). The `-4x5` exports are centre
+crops of those scaled up about 1.7× (2448×3060 cut from 1800px of
+height) — exactly the cropped, enlarged look this rule exists to prevent.
+They remain on disk and are referenced by nothing. `photograph()` in
+`content/types.ts` is the one place a frame becomes a `Photograph`.
 
-- **`weight`** is the largest placement the layout may give a frame:
-  `lead` runs full bleed, `wide` is held to the container, `detail` is a
-  half-width plate (set as a diptych when two fall together). Measured
-  across the set, real detail ranges from 1.58 bits/pixel down to 0.42.
-- **`focal`** is the subject as `[x%, y%]`. It drives the export crop and the
-  rendered `object-position`, so a frame dropped into a container of any ratio
-  still holds what the photograph is of.
+`content/projects.ts` → `ARCHIVE` lists the renders used only in the
+opening album (Larkscapes, Peeps Cafe, Stoma Museum, Capt. Bubbles).
+`kegiatan/`, `larkworksid/` and the loose concept images in
+`waroeng-andalan/` were audited and deliberately left out.
 
-**Weight caps placement, not file size.** An earlier pipeline also capped the
-exported width of soft masters, some as low as 1200px, on the theory that a
-low-detail render should not ship large. That made them blurrier: a 1200px file
-drawn in a 1300px CSS box on a 2x display is upscaled by the browser. Softness
-in the master is a fact about the master. Every frame now exports at the
-largest honest size — 2560 / 2160 / 1800 by tier, never exceeding the master —
-and `sizes` carries the ceiling so the browser cannot ask for more than exists.
+The home hero plate is the one full-bleed photograph: on a landscape
+screen it covers with under 2% lost; on a phone it is shown whole as a
+band at its own ratio.
 
-Paths and dimensions are derived by `crop()` in `content/types.ts`:
-
-```
-public/images/projects/<slug>/<slug>-01-3x2.jpg   landscape, ≥ 640px viewports
-public/images/projects/<slug>/<slug>-01-4x5.jpg   portrait, below 640px
-```
-
-Both crops are art-directed, not centre-cropped, and **both components serve
-both**. `Frame` always did; `Fill` — which draws the hero, the portfolio
-panels, the project cover and the next-project teaser, i.e. every place a
-photograph is largest — used to serve only the landscape crop, so the eight
-portrait masters of the opening frames were exported, deployed and never
-requested by anything. Phones got a 3:2 frame in a tall box.
-
-A project page shows **every** frame it has, each at the largest size its
-master supports — cover, facts, then plates. Nothing is a thumbnail. All 72
-files under `public/images` are referenced by a rendered page; there are no
-orphans.
-
-**Four masters are deliberately unpublished** out of the forty that exist:
-`amadya-05`, `mrs-d-house-05` and `the-prasetyos-05` are macroblocked phone
-snapshots, and `ms-ra-house-03` is a clean render cropped through the middle of
-a television. They are in `../_image-originals-backup/`, not deleted.
-
-**Never put source files in `public/`.** A 132MB SketchUp model was found in
-`public/images/projects/amadya/` and moved to `../_design-sources/`; anything
-under `public/` is served verbatim and ships in the deploy.
+**Never put source files in `public/`.** Anything under `public/` is
+served verbatim and ships in the deploy.
 
 ## Before launch
 

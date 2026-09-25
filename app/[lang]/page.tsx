@@ -5,7 +5,7 @@ import { buildMetadata, isLocale, paths } from '@/lib/site';
 import type { Locale } from '@/content/types';
 import { findImage, projects } from '@/content/projects';
 import { approach, home } from '@/content/site';
-import { Closing, Disciplines, Hero, Manifesto, Process } from '@/components/sections';
+import { Closing, Directions, Disciplines, Hero, Manifesto, Practice, Process } from '@/components/sections';
 import { Portfolio } from '@/components/portfolio';
 
 /**
@@ -22,6 +22,10 @@ import { Portfolio } from '@/components/portfolio';
  *               air after eight screens of photography
  *   Disciplines what the studio does, evidence summoned to the pointer
  *   Process     how it does it, on a rule that draws itself
+ *   In Practice the studio at work — site visits, measuring, working
+ *               sessions — turned through like pages
+ *   New Directions  Larkscapes.id and Larkworks.id — where the studio
+ *               is going next
  *   Closing     one call to action, at the end of the reading unit
  *
  * COMPOSITION OVER CONFIGURATION. The sequence is written out, not
@@ -79,6 +83,8 @@ export default async function HomePage({
       <Disciplines locale={locale} />
 
       <Process stages={approach.stages} locale={locale} />
+      <Practice locale={locale} />
+      <Directions locale={locale} />
       <Closing locale={locale} />
     </>
   );

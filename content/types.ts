@@ -82,6 +82,14 @@ export interface ProjectImage {
   readonly focal: readonly [number, number];
   readonly alt: Localized<string>;
   readonly caption?: Localized<string>;
+  /**
+   * A photograph delivered OUTSIDE the `<id>-3x2.jpg` export convention —
+   * a file as supplied, at whatever ratio it was made. Name as it sits in
+   * the project's folder, and its true pixel size, which is what lets a
+   * print take the photograph's own shape. Absent, the frame resolves by
+   * convention through `crop()`.
+   */
+  readonly file?: { readonly name: string; readonly width: number; readonly height: number };
 }
 
 export interface Project {
@@ -91,10 +99,13 @@ export interface Project {
   readonly type: Localized<string>;
   readonly location: Localized<string>;
   readonly year: number;
-  /** Square metres. Rendered with tabular figures. */
-  readonly area: number;
-  /** What the finished space does. The only prose a project carries. */
-  readonly outcome: Localized<string>;
+  /** Square metres. Rendered with tabular figures. Omitted when the
+   *  studio has not stated it — the facts row simply leaves it out. */
+  readonly area?: number;
+  /** What the finished space does. The only prose a project carries.
+   *  Optional: a project published before its write-up exists shows its
+   *  photographs and facts, and nothing is invented in the gap. */
+  readonly outcome?: Localized<string>;
   /** Ordered. `images[0]` opens the project and must be a `lead`. */
   readonly images: readonly ProjectImage[];
   readonly published: boolean;
@@ -118,6 +129,48 @@ export interface Passage {
  */
 export function crop(slug: string, id: string, which: keyof typeof CROP): string {
   return `/images-2/projects/${slug}/${id}-${CROP[which].suffix}.jpg`;
+}
+
+/**
+ * A PHOTOGRAPH, AS A PRINT: the file, its TRUE pixel size and what it
+ * shows. Everything that presents a photograph as a physical print — the
+ * portfolio spreads, the album overture, the lightbox, the project
+ * plates — works from this, never from a crop.
+ *
+ * WHY THE 3:2 FILE AND NEVER THE 4:5. The `-3x2` export is the render's
+ * own composition (2700×1800, the leads 4200×2800). The `-4x5` export is
+ * a centre crop of it scaled UP roughly 1.7× — 2448×3060 cut from 1800px
+ * of height — so a phone was being shown 53% of the building, enlarged.
+ * A print shows the whole photograph at its own ratio, scaled down to fit.
+ */
+export interface Photograph {
+  readonly src: string;
+  readonly width: number;
+  readonly height: number;
+  readonly alt: Localized<string>;
+  /** Whose work this is — the lightbox caption. */
+  readonly credit: Localized<string>;
+}
+
+/** The whole photograph behind a published frame. */
+export function photograph(project: Project, image: ProjectImage): Photograph {
+  if (image.file) {
+    return {
+      src: encodeURI(`/images-2/projects/${project.slug}/${image.file.name}`),
+      width: image.file.width,
+      height: image.file.height,
+      alt: image.alt,
+      credit: project.name,
+    };
+  }
+  const lead = image.weight === 'lead';
+  return {
+    src: crop(project.slug, image.id, 'landscape'),
+    width: lead ? 4200 : 2700,
+    height: lead ? 2800 : 1800,
+    alt: image.alt,
+    credit: project.name,
+  };
 }
 
 /** `50% 46%` — ready for CSS `object-position`. */

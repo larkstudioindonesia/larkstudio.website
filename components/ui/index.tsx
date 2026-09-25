@@ -8,12 +8,14 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
+  type CSSProperties,
   type ReactNode,
 } from 'react';
 import {
+  AnimatePresence,
   EASE,
   Motion,
-  SETTLE,
   curtainUp,
   fadeUp,
   maskUp,
@@ -21,20 +23,20 @@ import {
   stagger,
   useInView,
   useMagnetic,
-  useParallax,
   useProgress,
+  useFocusTrap,
+  useScrollHold,
   useTransform,
   wipeRight,
   type MotionValue,
   type Variants,
 } from '@/lib/motion';
 import {
-  CROP,
-  crop,
   objectPosition,
   type Locale,
-  type ProjectImage,
+  type Photograph,
 } from '@/content/types';
+import { ui } from '@/content/site';
 
 /**
  * LARK STUDIO — PRIMITIVES
@@ -266,7 +268,10 @@ export function SplitText({
   const rise = (key: string, content: string, index: number) => (
     <Motion.span
       key={key}
-      className="inline-block will-change-transform"
+      /* No permanent `will-change`: Framer promotes the span while it
+         animates, and a standing hint kept every split character of
+         every heading on the site as its own layer for good. */
+      className="inline-block"
       initial={{ y: '110%', opacity: 0 }}
       animate={active ? { y: '0%', opacity: 1 } : { y: '110%', opacity: 0 }}
       transition={{ duration: 0.95, ease: EASE.expo, delay: delay + index * step }}
@@ -641,7 +646,7 @@ export function SkipLink({ label }: { label: string }) {
  * constant must also appear in `images.qualities` in next.config.ts;
  * Next rejects a quality it has not been told about.
  */
-const RENDER_QUALITY = 88;
+export const RENDER_QUALITY = 88;
 
 /**
  * Decode state for an image that may already be decoded.
@@ -666,204 +671,6 @@ function useDecoded() {
   return { ref, decoded, onLoad } as const;
 }
 
-/**
- * A project photograph, in the two crops it was composed in.
- *
- * THREE RULES ARE ENFORCED HERE, and this is the component most likely
- * to be violated during build.
- *
- * 1. RESERVED SPACE, ALWAYS. The wrapper carries an explicit aspect
- *    ratio before anything loads. Parallax and hover zoom both run on
- *    the compositor INSIDE that box, so neither can move the page.
- *
- * 2. THE REVEAL IS TRIGGERED BY DECODE, NOT BY SCROLL.
- *      Permitted  — the image appears when it becomes available.
- *      Prohibited — the image is available, held hidden, and released
- *                   when scroll crosses a threshold. One real state,
- *                   performing as two.
- *
- * 3. TWO ART-DIRECTED RATIOS, NOT ONE CROPPED FILE. 4:5 below 640px,
- *    3:2 above. A centre-crop of the landscape frame produces beheaded
- *    architecture on phones.
- *
- * THE DOUBLE-DOWNLOAD, AND WHY `sizes` LOOKS ODD. Rule 3 means both
- * crops are in the DOM with one hidden by CSS. A lazy image inside
- * `display: none` is never fetched, so ordinary frames cost nothing
- * extra — but a `priority` image is preloaded regardless of whether its
- * container is visible, so the hero was preloading BOTH crops on every
- * device. Each crop therefore declares a display width of `1px` at the
- * breakpoints where it is hidden, and the browser satisfies the preload
- * with the smallest candidate in the srcset. It reads strangely and it
- * is load-bearing.
- */
-export function Frame({
-  slug,
-  image,
-  locale,
-  sizes,
-  priority = false,
-  parallax = 0,
-  zoom = false,
-  reveal = 'fade',
-  cap,
-  className = '',
-}: {
-  slug: string;
-  image: ProjectImage;
-  locale: Locale;
-  sizes: string;
-  priority?: boolean;
-  parallax?: number;
-  /** Opt-in hover zoom. Scoped to entries and galleries, where
-   *  inspecting the photograph IS the intent. */
-  zoom?: boolean;
-  reveal?: 'fade' | 'curtain' | 'wipe';
-  /**
-   * A ceiling on the landscape frame's height, e.g. `'82vh'`.
-   *
-   * A full-bleed 3:2 photograph is 960px tall on a 1440px screen —
-   * taller than the laptop viewport it is meant to impress, so the
-   * visitor scrolls past a composition they never see whole. Capping the
-   * frame crops it instead, and because the cap is a viewport unit the
-   * reserved space is still deterministic: no CLS.
-   *
-   * FULL-BLEED FRAMES ONLY. It is applied as an explicit `height`, not
-   * as `max-height` on the aspect box: Chrome resolves an over-
-   * constrained `aspect-ratio` box by shrinking the WIDTH, so the
-   * viewport-wide entry silently became a 999px column with black beside
-   * it. The height therefore has to be computed from the viewport, which
-   * is only correct when the frame spans it.
-   */
-  cap?: string;
-  className?: string;
-}) {
-  const portrait = useDecoded();
-  const landscape = useDecoded();
-
-  /**
-   * THE CLIP / LAZY-LOAD DEADLOCK, and why this hook is here.
-   *
-   * The reveal clips the layer the photograph sits in. Chrome's native
-   * lazy loading decides when to fetch from the image's INTERSECTION
-   * with the viewport, and an intersection rect is clipped by every
-   * ancestor — including `clip-path`. A fully-closed curtain therefore
-   * reports an empty rect, the browser never starts the fetch, `onLoad`
-   * never fires, and the curtain that is waiting on the decode never
-   * opens. The frame stays a grey rectangle forever, on a portfolio
-   * whose entire content is photographs.
-   *
-   * The fix is to hand the loading decision to an observer on the
-   * UNCLIPPED frame instead: 500px before the frame reaches the
-   * viewport, the image is switched to eager and fetches normally. The
-   * reveal still triggers on decode, which keeps the rule that an image
-   * appears when it becomes available rather than when scroll crosses a
-   * line.
-   */
-  const { ref: frame, inView } = useInView<HTMLDivElement>({
-    rootMargin: '500px 0px 500px 0px',
-  });
-  const y = useParallax(frame, parallax);
-
-  /* The slack the parallax travels through. Without it the moving layer
-     is exactly frame-sized, and translating it exposes the placeholder
-     as a band along one edge for most of the element's pass. */
-  const slack = Math.ceil(parallax / 2);
-
-  const variants =
-    reveal === 'curtain' ? curtainUp : reveal === 'wipe' ? wipeRight : undefined;
-
-  const face = (
-    which: keyof typeof CROP,
-    visibility: string,
-    hint: string,
-    decode: ReturnType<typeof useDecoded>,
-  ) => {
-    const source = crop(slug, image.id, which);
-    return (
-      <div
-        className={`relative overflow-hidden bg-sunk ${visibility}`}
-        style={
-          cap !== undefined && which === 'landscape'
-            ? { height: `min(66.667vw, ${cap})` }
-            : { aspectRatio: CROP[which].ratio }
-        }
-      >
-        <Motion.div
-          className="absolute inset-x-0"
-          {...(variants
-            ? {
-                variants,
-                initial: 'hidden',
-                animate: decode.decoded ? 'visible' : 'hidden',
-              }
-            : {
-                initial: { opacity: 0 },
-                animate: { opacity: decode.decoded ? 1 : 0 },
-                transition: { duration: 0.7, ease: EASE.expo },
-              })}
-          style={parallax > 0 ? { y, top: -slack, bottom: -slack } : { top: 0, bottom: 0 }}
-        >
-          {/* THE SETTLE. The photograph arrives 6% over-size and comes to
-              rest over 1.6s, behind the clip that is opening at the same
-              time. It is the whole reason a still frame feels alive on
-              arrival, and it is the only scale this site applies to a
-              photograph that is not a pointer response. */}
-          <Motion.div
-            className="absolute inset-0"
-            initial={{ scale: SETTLE }}
-            animate={{ scale: decode.decoded ? 1 : SETTLE }}
-            transition={{ duration: 1.6, ease: EASE.expo }}
-          >
-          <Image
-            ref={decode.ref}
-            src={source}
-            alt={image.alt[locale]}
-            fill
-            sizes={hint}
-            quality={RENDER_QUALITY}
-            priority={priority}
-            loading={priority || inView ? 'eager' : 'lazy'}
-            onLoad={decode.onLoad}
-            /* The subject, not the centre. A frame dropped into a
-               container of any ratio still holds what the photograph is
-               actually of — the single change that fixed "badly cropped"
-               across the whole site. */
-            style={{ objectPosition: objectPosition(image.focal) }}
-            className={`h-full w-full object-cover ${
-              zoom
-                ? 'transition-transform duration-[900ms] ease-expo group-hover:scale-[1.02]'
-                : ''
-            }`}
-          />
-          </Motion.div>
-        </Motion.div>
-      </div>
-    );
-  };
-
-  /**
-   * WHY THERE IS NO WIDTH CAP HERE ANY MORE.
-   *
-   * This used to append `, ${WEIGHT_WIDTH[weight]}px` to the hint, to
-   * stop the browser asking for more pixels than the master held. It
-   * never did anything. A `sizes` list is read left to right and the
-   * first entry whose media condition matches wins; every hint this
-   * component is given already ends in an unconditional entry (`100vw`,
-   * `400px`), so the appended cap sat after a term that always matches
-   * and was never reachable.
-   *
-   * It was also unnecessary. The optimiser clamps: request 2560 from an
-   * 1800px master and it returns 1800, never an upscale. The real
-   * defence against a soft frame is a master with enough pixels in it,
-   * which is now the export contract — see `crop` in content/types.ts.
-   */
-  return (
-    <div ref={frame} className={className}>
-      {face('portrait', 'tablet:hidden', `(min-width: 640px) 1px, ${sizes}`, portrait)}
-      {face('landscape', 'hidden tablet:block', `(max-width: 639px) 1px, ${sizes}`, landscape)}
-    </div>
-  );
-}
 
 /**
  * A cover image filling its positioned parent. Used by the hero, the
@@ -975,6 +782,467 @@ export function CursorLabel({
       }}
     >
       {children}
+    </div>
+  );
+}
+
+/* ================================================================== *
+ * PRINTS
+ * ================================================================== */
+
+/**
+ * THE PRINT BORDER, as a fraction of the print's width on each side.
+ * Equal all round — a fine-art mount, not an instant-camera border.
+ */
+const MOUNT = 0.032;
+
+/**
+ * The outer aspect of a print (border included) for a photograph of the
+ * given ratio. Layouts that place prints need it to know how tall one
+ * will be; the lightbox needs it to fit one to the screen.
+ */
+export function printAspect(photo: Photograph): number {
+  const inner = 1 - 2 * MOUNT;
+  return 1 / (inner * (photo.height / photo.width) + 2 * MOUNT);
+}
+
+/**
+ * A PHOTOGRAPH AS A PHYSICAL PRINT. The core rule of the site's
+ * photography, enforced in one place:
+ *
+ *   THE PHOTOGRAPH IS THE ARTWORK; THE FRAME ADAPTS TO IT.
+ *
+ * The image box takes the photograph's own ratio from its true pixel
+ * size, so nothing is ever cropped to fill a rectangle — a print is as
+ * tall as its photograph makes it, and a layout that needs a print to fit
+ * a space scales the whole print DOWN. `object-contain` inside an
+ * exact-ratio box is belt and braces.
+ *
+ * The caller sets only the width (and position); the border scales with
+ * it, because the print is a size container and the mount is in `cqw`.
+ *
+ * With `onOpen` the print is a button — every print on the site can be
+ * picked up and looked at properly. The lightbox reads the element it is
+ * given, so the enlargement grows out of the print the reader touched.
+ */
+export function Print({
+  photo,
+  locale,
+  sizes,
+  eager = false,
+  priority = false,
+  rotate = 0,
+  onOpen,
+  className = '',
+  style,
+}: {
+  photo: Photograph;
+  locale: Locale;
+  sizes: string;
+  eager?: boolean;
+  priority?: boolean;
+  /** Degrees. Held to ±2 by convention — a print laid down, not tossed. */
+  rotate?: number;
+  onOpen?: (origin: HTMLElement) => void;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const decode = useDecoded();
+  const body = (
+    <span
+      className="block w-full bg-print p-[3.2cqw] shadow-[0_1px_1px_rgba(0,0,0,0.28),0_18px_36px_-22px_rgba(0,0,0,0.85)]"
+    >
+      <span
+        className="relative block w-full overflow-hidden bg-print-well"
+        style={{ aspectRatio: `${String(photo.width)} / ${String(photo.height)}` }}
+      >
+        <Image
+          ref={decode.ref}
+          src={photo.src}
+          alt={photo.alt[locale]}
+          fill
+          sizes={sizes}
+          quality={RENDER_QUALITY}
+          priority={priority}
+          loading={priority || eager ? 'eager' : 'lazy'}
+          onLoad={decode.onLoad}
+          className={`object-contain transition-opacity duration-700 ease-expo ${
+            decode.decoded ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+      </span>
+    </span>
+  );
+
+  const frame = { transform: `rotate(${String(rotate)}deg)` };
+
+  return (
+    <div className={`[container-type:inline-size] ${className}`} style={style}>
+      {onOpen ? (
+        <button
+          type="button"
+          data-print=""
+          data-rotate={rotate}
+          aria-label={`${ui.enlarge[locale]}: ${photo.alt[locale]}`}
+          onClick={(event) => {
+            onOpen(event.currentTarget);
+          }}
+          onPointerEnter={() => {
+            setCursorLabel(ui.enlarge[locale]);
+          }}
+          onPointerLeave={() => {
+            setCursorLabel(null);
+          }}
+          /* Picked up a little under the pointer: lifted 6px and turned
+             halfway back to square. Transform only. */
+          className="block w-full cursor-zoom-in transition-transform duration-500 ease-expo hover:![transform:translateY(-6px)_rotate(calc(var(--r)*0.4))] focus-visible:![transform:translateY(-6px)_rotate(calc(var(--r)*0.4))]"
+          style={{ ...frame, ['--r' as string]: `${String(rotate)}deg` }}
+        >
+          {body}
+        </button>
+      ) : (
+        <div data-print="" style={frame}>
+          {body}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * THE LIGHTBOX
+ * ------------------------------------------------------------------ */
+
+type LightboxRequest = {
+  photos: readonly Photograph[];
+  index: number;
+  origin: HTMLElement | null;
+  locale: Locale;
+};
+
+/**
+ * A module-level store, like the cursor label: any print anywhere can
+ * open the one lightbox without a provider wrapping the tree.
+ */
+let lightbox: LightboxRequest | null = null;
+const lightboxListeners = new Set<() => void>();
+
+function setLightbox(next: LightboxRequest | null): void {
+  lightbox = next;
+  for (const listener of lightboxListeners) listener();
+}
+
+/** Opens the lightbox on `photos[index]`, growing out of `origin`. */
+export function openLightbox(request: LightboxRequest): void {
+  setCursorLabel(null);
+  setLightbox(request);
+}
+
+function useLightbox(): LightboxRequest | null {
+  return useSyncExternalStore(
+    (listener) => {
+      lightboxListeners.add(listener);
+      return () => lightboxListeners.delete(listener);
+    },
+    () => lightbox,
+    () => null,
+  );
+}
+
+/** Screen space the enlarged print may take, and where its centre is. */
+function stageBox(photo: Photograph) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const narrow = vw < 640;
+  const side = narrow ? 16 : 96; // room for the arrows on wide screens
+  const top = narrow ? 64 : 72; // the close button
+  const bottom = narrow ? 112 : 88; // caption, and the arrows on a phone
+  /* Never wider than the photograph has pixels: a 1,400px file is not
+     blown up to fill a 1,900px screen. It is shown at its own size, or
+     smaller where the screen is smaller. */
+  const width = Math.min(vw - 2 * side, (vh - top - bottom) * printAspect(photo), photo.width, 2200);
+  return { width, cx: vw / 2, cy: top + (vh - top - bottom) / 2 };
+}
+
+/** Where a print sits now, relative to where the stage wants it. */
+function flipFrom(origin: HTMLElement | null, photo: Photograph) {
+  if (!origin?.isConnected) return null;
+  const rect = origin.getBoundingClientRect();
+  /* A print scrolled or translated off screen is not a place to fly
+     back to — the stage then simply fades. */
+  if (rect.bottom < 0 || rect.top > window.innerHeight || rect.right < 0 || rect.left > window.innerWidth) {
+    return null;
+  }
+  const stage = stageBox(photo);
+  const rotate = Number(origin.dataset.rotate ?? 0);
+  /* The bounding box of a rotated print is slightly larger than the
+     print; at ±2° the difference is under 4%, and dividing it back out
+     keeps the enlargement from starting a hair too big. */
+  const angle = (Math.abs(rotate) * Math.PI) / 180;
+  const aspect = printAspect(photo);
+  const unrotated = rect.width / (Math.cos(angle) + Math.sin(angle) / aspect);
+  return {
+    x: rect.left + rect.width / 2 - stage.cx,
+    y: rect.top + rect.height / 2 - stage.cy,
+    scale: unrotated / stage.width,
+    rotate,
+  };
+}
+
+/**
+ * THE LIGHTBOX — one print, picked up and brought close.
+ *
+ * The enlargement is a FLIP, done by hand: the print is measured where it
+ * lies, the stage is laid out at full size, and the stage starts
+ * transformed back onto the original — offset, scaled down, at the same
+ * slight angle — then settles square in the centre. Closing runs the same
+ * move in reverse to wherever the print is NOW. Framer's `layoutId` would
+ * do this with layout projection, which is the one feature this site's
+ * motion budget excludes (see lib/motion.tsx); four transform values do
+ * the same job.
+ *
+ * The photograph is never cropped: the stage is sized from the print's
+ * own aspect to the largest box the screen allows. While the full-size
+ * file arrives, the print's already-loaded image stands in underneath it,
+ * so the enlargement is never empty.
+ *
+ * Closes on Escape, the close button, or a click/tap outside the print.
+ * Arrow keys, the arrow buttons and a sideways swipe move through the
+ * set. Focus is trapped inside and returned to the print on close, and
+ * the page is held still underneath — scroll position untouched.
+ */
+export function Lightbox() {
+  const request = useLightbox();
+  return (
+    <AnimatePresence>
+      {request && <LightboxStage key="lightbox" request={request} />}
+    </AnimatePresence>
+  );
+}
+
+function LightboxStage({ request }: { request: LightboxRequest }) {
+  const { photos, locale } = request;
+  const [index, setIndex] = useState(request.index);
+  const [, setViewport] = useState(0);
+  const container = useRef<HTMLDivElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const count = photos.length;
+  const photo = photos[index] ?? photos[0];
+
+  /* Measured at open. The origin is the print the reader touched, and
+     only that print — after moving through the set, closing fades. */
+  const [from] = useState(() => (photo ? flipFrom(request.origin, photo) : null));
+  const [exitTo, setExitTo] = useState<ReturnType<typeof flipFrom>>(null);
+  const [closing, setClosing] = useState(false);
+
+  useScrollHold(true);
+  useFocusTrap(container, true);
+
+  const close = useCallback(() => {
+    if (!photo) return;
+    setExitTo(index === request.index ? flipFrom(request.origin, photo) : null);
+    setClosing(true);
+  }, [index, photo, request.index, request.origin]);
+
+  /* Release the store only after the exit target is in this render, so
+     AnimatePresence reads it. */
+  useEffect(() => {
+    if (!closing) return;
+    const frame = requestAnimationFrame(() => {
+      setLightbox(null);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [closing]);
+
+  const step = useCallback(
+    (delta: number) => {
+      setIndex((current) => (current + delta + count) % count);
+    },
+    [count],
+  );
+
+  useEffect(() => {
+    closeButton.current?.focus({ preventScroll: true });
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close();
+      else if (event.key === 'ArrowRight' && count > 1) step(1);
+      else if (event.key === 'ArrowLeft' && count > 1) step(-1);
+    };
+    const onResize = () => {
+      setViewport((value) => value + 1);
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [close, count, step]);
+
+  /* Return focus to the print that opened this, without scrolling to it. */
+  useEffect(() => {
+    const origin = request.origin;
+    return () => {
+      origin?.focus({ preventScroll: true });
+    };
+  }, [request.origin]);
+
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+
+  if (!photo) return null;
+  const stage = stageBox(photo);
+  const aspect = printAspect(photo);
+  const settled = { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1 };
+  const exit = exitTo
+    ? { ...exitTo, opacity: 1 }
+    : { x: 0, y: 12, scale: 0.97, rotate: 0, opacity: 0 };
+
+  const arrow =
+    'flex h-[44px] w-[44px] items-center justify-center border border-line-strong text-ink-2 transition-colors duration-300 ease-expo hover:border-ink-3 hover:text-ink';
+
+  return (
+    <div
+      ref={container}
+      role="dialog"
+      aria-modal="true"
+      aria-label={photo.credit[locale]}
+      className="fixed inset-0 z-95"
+      onTouchStart={(event) => {
+        const touch = event.touches[0];
+        swipe.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+      }}
+      onTouchEnd={(event) => {
+        const touch = event.changedTouches[0];
+        const start = swipe.current;
+        swipe.current = null;
+        if (!start || !touch || count < 2) return;
+        const dx = touch.clientX - start.x;
+        if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(touch.clientY - start.y) * 1.5) {
+          step(dx < 0 ? 1 : -1);
+        }
+      }}
+    >
+      {/* The presentation layer. Clicking anywhere on it closes. */}
+      <Motion.div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[rgba(8,8,9,0.92)]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.45, ease: EASE.expo }}
+        onClick={close}
+      />
+
+      {/* THE PRINT. Positioned at its settled place; the FLIP transform
+          carries it there from the original. */}
+      <Motion.div
+        key={`print-${String(index)}`}
+        className="absolute [container-type:inline-size]"
+        style={{
+          width: stage.width,
+          left: stage.cx - stage.width / 2,
+          top: stage.cy - stage.width / aspect / 2,
+        }}
+        initial={index === request.index && from ? { ...from, opacity: 1 } : { x: 0, y: 12, scale: 0.97, rotate: 0, opacity: 0 }}
+        animate={settled}
+        exit={exit}
+        transition={{ duration: 0.7, ease: EASE.expo }}
+      >
+        <LightboxPrint photo={photo} locale={locale} width={stage.width} origin={index === request.index ? request.origin : null} />
+      </Motion.div>
+
+      {/* Caption and count, beneath the print. */}
+      <Motion.div
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-1 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1, transition: { duration: 0.5, delay: 0.25 } }}
+        exit={{ opacity: 0, transition: { duration: 0.2 } }}
+      >
+        <p className="font-text text-caption text-ink-2">{photo.credit[locale]}</p>
+        {count > 1 && (
+          <p className="figures label text-ink-3">
+            {String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
+          </p>
+        )}
+      </Motion.div>
+
+      <Motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1, transition: { duration: 0.4, delay: 0.2 } }}
+        exit={{ opacity: 0, transition: { duration: 0.15 } }}
+      >
+        <button
+          ref={closeButton}
+          type="button"
+          onClick={close}
+          aria-label={ui.menuClose[locale]}
+          className={`absolute right-4 top-[max(1rem,env(safe-area-inset-top))] tablet:right-6 tablet:top-6 ${arrow}`}
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
+            <path d="M2 2l12 12M14 2L2 14" />
+          </svg>
+        </button>
+        {count > 1 && (
+          <div className="absolute inset-x-0 bottom-[max(3.75rem,calc(env(safe-area-inset-bottom)+3.25rem))] flex justify-center gap-3 tablet:bottom-auto tablet:top-1/2 tablet:-translate-y-1/2 tablet:justify-between tablet:px-6">
+            <button type="button" onClick={() => { step(-1); }} aria-label={ui.previous[locale]} className={arrow}>
+              <Arrow className="w-[20px] rotate-180" />
+            </button>
+            <button type="button" onClick={() => { step(1); }} aria-label={ui.next[locale]} className={arrow}>
+              <Arrow className="w-[20px]" />
+            </button>
+          </div>
+        )}
+      </Motion.div>
+    </div>
+  );
+}
+
+/**
+ * The enlarged print. The full-size file loads over the print's own
+ * already-decoded image, which stands in at once, so the growing print is
+ * never an empty frame.
+ */
+function LightboxPrint({
+  photo,
+  locale,
+  width,
+  origin,
+}: {
+  photo: Photograph;
+  locale: Locale;
+  width: number;
+  origin: HTMLElement | null;
+}) {
+  const [placeholder] = useState(
+    () => origin?.querySelector('img')?.currentSrc ?? null,
+  );
+  const decode = useDecoded();
+  return (
+    <div className="bg-print p-[3.2cqw] shadow-[0_2px_4px_rgba(0,0,0,0.3),0_40px_80px_-40px_rgba(0,0,0,0.9)]" style={{ width }}>
+      <div
+        className="relative w-full overflow-hidden bg-print-well"
+        style={{ aspectRatio: `${String(photo.width)} / ${String(photo.height)}` }}
+      >
+        {placeholder && (
+          /* The same URL the print already fetched — served from cache.
+             A plain img, since it is not a new request to optimise. */
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={placeholder} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-contain" />
+        )}
+        <Image
+          ref={decode.ref}
+          src={photo.src}
+          alt={photo.alt[locale]}
+          fill
+          sizes={`${String(Math.ceil(width))}px`}
+          quality={RENDER_QUALITY}
+          loading="eager"
+          onLoad={decode.onLoad}
+          className={`object-contain transition-opacity duration-500 ${decode.decoded ? 'opacity-100' : 'opacity-0'}`}
+        />
+      </div>
     </div>
   );
 }

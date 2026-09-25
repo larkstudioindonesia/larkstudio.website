@@ -37,6 +37,7 @@ import {
   AnimatePresence,
   LazyMotion,
   MotionConfig,
+  MotionGlobalConfig,
   domAnimation,
   m,
   motionValue,
@@ -85,6 +86,9 @@ const DUR = {
 export const EASE = {
   expo: [0.16, 1, 0.3, 1],
   quart: [0.76, 0, 0.24, 1],
+  /** A board turning on a hinge: a slow lift, a long even swing, and a
+   *  soft landing — never a snap at either end. */
+  page: [0.62, 0.02, 0.24, 1],
 } as const;
 
 /** Critically damped — approaches its target and stops. */
@@ -96,8 +100,13 @@ export const SPRING = {
   /** The progress rail and other long travels. */
   rail: { stiffness: 90, damping: 30, mass: 0.4 },
   /** The horizontal portfolio track. Heavier than anything else here:
-   *  a whole screen of work is moving, and it should read as weight. */
-  track: { stiffness: 120, damping: 34, mass: 0.9 },
+   *  a whole screen of work is moving, and it should read as weight.
+   *
+   *  The rest thresholds are the precision. This spring runs on a 0–1
+   *  progress value that maps to ~8,500px of travel, and Framer's
+   *  default `restDelta` of 0.01 let it come to rest up to 1% short —
+   *  a panel parked 20–85px off centre when the visitor stopped. */
+  track: { stiffness: 120, damping: 34, mass: 0.9, restDelta: 0.00005, restSpeed: 0.0001 },
 } as const satisfies Record<string, Transition>;
 
 /* ================================================================== *
@@ -157,6 +166,22 @@ export const panel: Variants = {
 };
 
 /**
+ * THE PAGE TURN, for anything read one sheet at a time (the In Practice
+ * photographs, the New Directions announcement). The outgoing sheet eases
+ * 48px away and fades while the next settles in from the other side.
+ * `custom` is the direction: 1 forward, -1 back.
+ */
+export const turn: Variants = {
+  enter: (direction: number) => ({ x: direction >= 0 ? 48 : -48, opacity: 0 }),
+  center: { x: 0, opacity: 1, transition: { duration: 0.95, ease: EASE.expo } },
+  exit: (direction: number) => ({
+    x: direction >= 0 ? -48 : 48,
+    opacity: 0,
+    transition: { duration: 0.55, ease: EASE.quart },
+  }),
+};
+
+/**
  * Parent for a staggered group whose animated elements are its DIRECT
  * children. `SplitText` deliberately does not use this — see its
  * docblock for why an explicit per-index delay is preferred there.
@@ -202,9 +227,11 @@ export function useInView<T extends Element>({
       return;
     }
 
+    let reported = false;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry) return;
+        reported = true;
         if (entry.isIntersecting) {
           setInView(true);
           if (once) observer.disconnect();
@@ -225,12 +252,22 @@ export function useInView<T extends Element>({
      * page with the copy still in the DOM. The timer is gated on
      * visibility because a backgrounded tab delivers no intersection
      * callbacks at all.
+     *
+     * IT FIRES ONLY IF THE OBSERVER HAS NEVER REPORTED. An observer always
+     * delivers one callback on `observe()`, intersecting or not, so
+     * silence is the one honest signal that the mechanism is broken. The
+     * previous timer fired on everything still off-screen after three
+     * seconds — which, behind a seven-second overture, was every reveal
+     * on the page: they all completed where nobody could see them, and
+     * every lazy photograph below the fold switched to eager and
+     * downloaded at once.
      */
     let timer = 0;
     const arm = () => {
       if (document.hidden) return;
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
+        if (reported) return;
         setInView(true);
         observer.disconnect();
       }, 3000);
@@ -251,32 +288,6 @@ export function useInView<T extends Element>({
 /* ================================================================== *
  * SCROLL
  * ================================================================== */
-
-/**
- * Vertical parallax for an element, driven by its own pass through the
- * viewport. `distance` is total travel: 80 means 40px low on entry and
- * 40px high on exit. The container must already own that slack or the
- * translate will expose the surface behind it.
- *
- * The spring is what makes this read as expensive rather than
- * mechanical: a raw scroll-linked transform is exactly correct at every
- * scroll position and therefore feels welded to the scrollbar.
- */
-export function useParallax(
-  target: RefObject<HTMLElement | null>,
-  distance = 80,
-): MotionValue<number> {
-  const reduced = useReducedMotion();
-  const { scrollYProgress } = useScroll({
-    target,
-    offset: ['start end', 'end start'],
-  });
-  const travel = reduced === true ? 0 : distance;
-  return useSpring(
-    useTransform(scrollYProgress, [0, 1], [travel / 2, -travel / 2]),
-    SPRING.scroll,
-  );
-}
 
 type Edge = 'start' | 'end' | 'center' | `${number}%`;
 /** e.g. `'start 90%'` — the target's start edge against 90% of the viewport. */
@@ -480,30 +491,6 @@ export function useCursorLabel(): string | null {
 }
 
 /* ================================================================== *
- * REVEAL SCALE
- * ================================================================== */
-
-/**
- * The settle: a photograph arrives very slightly over-size and comes to
- * rest.
- *
- * This replaces the perspective rig that was here before — stages,
- * planes, pointer tilt, per-frame banking. That system produced real
- * depth and the wrong impression: rotated frames and tilted cards read
- * as an experiment about the web rather than as a studio presenting
- * buildings. An architectural photograph should be shown square, at
- * size, and allowed to breathe.
- *
- * What survives is the part that was actually doing the work: a slow
- * settle on arrival, and vertical parallax. Both keep the page alive
- * without ever putting the architecture on an angle.
- */
-/* The arrival over-size. At 1.06 every plate spent its first 1.6s
- * showing 94% of the frame; at 1.02 the settle still reads as movement
- * and the composition stays effectively intact throughout. */
-export const SETTLE = 1.02;
-
-/* ================================================================== *
  * DOCUMENT
  * ================================================================== */
 
@@ -589,105 +576,65 @@ export function useEscape(active: boolean, onEscape: () => void): void {
 }
 
 /**
- * True only for the first page view of a browsing session — the
- * preloader's gate. A full opening sequence is an asset on arrival and
- * an obstacle on every navigation after it; `sessionStorage` survives
- * client-side routing and a refresh, and resets when the tab closes.
- */
-/**
- * Resolved ONCE per document and cached at module scope.
+ * REPLAY_OVERTURE — whether a RELOAD replays the opening sequence.
  *
- * This used to read and write `sessionStorage` inside the hook, which
- * made it single-consumer by accident: the first component to mount
- * claimed the flag and every later caller was told it was a repeat
- * visit. That was invisible while the overture was the only consumer.
- * It stops being invisible the moment anything else needs to know
- * whether the overture is running — see `useStageDelay`.
- */
-let firstVisit: boolean | null = null;
-
-function resolveFirstVisit(): boolean {
-  if (firstVisit !== null) return firstVisit;
-  try {
-    const unseen = window.sessionStorage.getItem('lark-visited') === null;
-    if (unseen) window.sessionStorage.setItem('lark-visited', '1');
-    firstVisit = unseen;
-  } catch {
-    /* Private mode and blocked storage both land here. Never showing the
-       overture is a smaller cost than showing it every time. */
-    firstVisit = false;
-  }
-  return firstVisit;
-}
-
-/**
- * REPLAY_OVERTURE — the single switch that decides whether the opening
- * sequence is shown once per session or on every single load.
+ * `true` is the current requirement: the person building the site has
+ * to be able to see the overture on every refresh, and "the code exists"
+ * is not the same claim as "the visitor sees it". What it no longer does
+ * is replay on an ordinary navigation. The first view of a browsing
+ * session always plays; after that only `reload` does, so switching
+ * language, following a link or going back never sits the visitor
+ * through seven seconds they have already watched — which read as the
+ * intro "randomly restarting".
  *
- * It is `true`, which means EVERY REFRESH PLAYS THE INTRO. That is
- * deliberate and it is the current requirement: an opening sequence
- * gated behind `sessionStorage` is invisible to the person building the
- * site, because the second page load they ever do is the last time they
- * see it. "The code exists" and "the visitor sees it" are different
- * claims, and only the second one matters.
- *
- * Flip this to `false` to restore once-per-session behaviour for
- * production. Nothing else has to change: `useFirstVisit` keeps its
- * storage logic and simply stops being consulted.
+ * Flip to `false` for strict once-per-session behaviour.
  */
-/* Annotated `: boolean` rather than left to inference. A bare `= true`
-   narrows to the literal type `true`, and the ternary below then reads
-   as a constant condition that lint rejects — which would make the
-   switch impossible to flip without also editing its use site. */
+/* Annotated `: boolean` so the switch can be flipped without lint
+   reading the ternary in `INTRO_SCRIPT` as a constant condition. */
 export const REPLAY_OVERTURE: boolean = true;
 
-export function useFirstVisit(): boolean {
-  /**
-   * THE FLASH, AND WHY THE INITIAL VALUE MATTERS.
-   *
-   * This used to start `false` and flip true in an effect. With the
-   * overture set to replay, that meant the server rendered no overlay,
-   * the first client paint rendered no overlay, and the overture only
-   * mounted after hydration — so every load showed a frame or two of the
-   * bare landing page before the curtain dropped over it. On a slow
-   * device that is a clearly visible flash of the hero, and it is the
-   * "intro starts twice / flashes" symptom.
-   *
-   * When the overture always replays the answer is knowable at render
-   * time, so it is seeded synchronously and the overlay is present in
-   * the server HTML. Server and client agree, so there is no hydration
-   * mismatch. Only the storage-backed path still needs an effect, since
-   * `sessionStorage` does not exist during prerender.
-   */
-  const [first, setFirst] = useState(REPLAY_OVERTURE);
-  useEffect(() => {
-    if (!REPLAY_OVERTURE) setFirst(resolveFirstVisit());
-  }, []);
-  return first;
-}
-
 /**
- * THE STAGE CLOCK — how long the landing page waits before it performs.
+ * THE DECISION IS MADE BEFORE FIRST PAINT, IN THE DOCUMENT HEAD.
  *
- * The overture holds a fixed overlay for 5.6s, and the aperture that
- * uncovers the page starts opening at 4.6s. Without this, every
- * first-paint entrance on the site — the header stagger, the hero's
- * nine-cue score — ran on its own clock from mount, which means it ran
- * to completion BEHIND the overlay and the visitor arrived on a page
- * that had already finished animating. The intro would have ended in
- * exactly the hard cut the whole sequence exists to avoid.
+ * The overture is in the server HTML, because an overlay that mounts
+ * after hydration shows a frame of the bare page first — the flash.
+ * But the server cannot know whether this visitor should see it: that
+ * needs `sessionStorage`, the navigation type, the URL hash and the
+ * reduced-motion preference, all of which are client facts. Deciding in
+ * a React effect means deciding after the first paint, which is exactly
+ * the flash again, the other way round.
  *
- * Adding this to an entrance delay parks it until the aperture is open,
- * so the page performs INTO the opening rather than behind it. 4.8s sits
- * just after the aperture starts moving, which is what makes the two
- * read as one continuous camera move instead of two events.
+ * So this runs as a blocking inline script at the top of `<body>`,
+ * before anything paints, and writes one attribute to `<html>`:
  *
- * Returns 0 on every repeat visit and under reduced motion, where there
- * is no overture to wait for.
+ *   data-intro="play"   the overture runs; CSS locks scroll
+ *   data-intro="skip"   CSS removes the overlay before it is ever drawn
+ *   (absent)            JavaScript is off; CSS removes it as well
+ *
+ * React reads the same attribute when it hydrates, so the stylesheet and
+ * the state machine can never disagree. `<html>` carries
+ * `suppressHydrationWarning` for this one attribute.
  */
-/* `OVERTURE_HOLD` / `useStageDelay` are gone. They implemented Act II
-   as a DELAYED animation rather than a GATED one, which is what let the
-   opening and the landing page run over each other. Use `useActTwo()`. */
+export const INTRO_SCRIPT = `(function(){var d=document.documentElement,p=false;try{var s=window.sessionStorage,n=performance.getEntriesByType('navigation')[0],seen=s.getItem('lark-overture')==='1';p=!window.matchMedia('(prefers-reduced-motion: reduce)').matches&&!location.hash&&(!seen||(${String(REPLAY_OVERTURE)}&&!!n&&n.type==='reload'));if(p){s.setItem('lark-overture','1');history.scrollRestoration='manual';}}catch(e){p=false}d.setAttribute('data-intro',p?'play':'skip')})();`;
+
+/* ------------------------------------------------------------------ *
+ * Reduced motion, globally and before the first animation.
+ *
+ * `MotionConfig reducedMotion="user"` only drops TRANSFORM animation —
+ * every opacity fade on the site still ran its full 0.9s, which is not
+ * "show content normally". Skipping at the engine resolves every
+ * animation to its end state in the same frame, so a reduced-motion
+ * visitor gets the finished page immediately. Set at module evaluation,
+ * because a provider effect runs after its children have already
+ * started animating.
+ * ------------------------------------------------------------------ */
+if (typeof window !== 'undefined') {
+  const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+  MotionGlobalConfig.skipAnimations = query.matches;
+  query.addEventListener('change', () => {
+    MotionGlobalConfig.skipAnimations = query.matches;
+  });
+}
 
 /**
  * True when the viewport matches. Used by exactly one thing: the
@@ -758,8 +705,46 @@ let lenis: Lenis | null = null;
  * the one sanctioned way to move the reader.
  */
 export function scrollToY(y: number, immediate = false): void {
-  if (lenis) lenis.scrollTo(y, immediate ? { immediate: true } : { duration: 1 });
-  else window.scrollTo({ top: y, behavior: immediate ? 'auto' : 'smooth' });
+  /* Scroll snapping (the portfolio's stops on touch screens) would
+     re-snap a frame-by-frame smooth scroll at every step, so it is held
+     off until the move lands. */
+  const root = document.documentElement;
+  root.classList.add('snap-off');
+  const release = () => {
+    root.classList.remove('snap-off');
+  };
+  if (lenis) {
+    lenis.scrollTo(y, immediate ? { immediate: true, onComplete: release } : { duration: 1, onComplete: release });
+    if (immediate) requestAnimationFrame(release);
+  } else {
+    window.scrollTo({ top: y, behavior: immediate ? 'auto' : 'smooth' });
+    window.setTimeout(release, immediate ? 0 : 900);
+  }
+}
+
+/**
+ * THE HEADER HOLD — a module-level store, like the cursor label. The
+ * portfolio sets it while it is pinned on a phone, where the site header
+ * would otherwise sit over the showcase's own masthead.
+ */
+let headerHeld = false;
+const headerListeners = new Set<() => void>();
+
+export function setHeaderHeld(held: boolean): void {
+  if (headerHeld === held) return;
+  headerHeld = held;
+  for (const listener of headerListeners) listener();
+}
+
+export function useHeaderHeld(): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      headerListeners.add(listener);
+      return () => headerListeners.delete(listener);
+    },
+    () => headerHeld,
+    () => false,
+  );
 }
 
 /**
@@ -778,8 +763,44 @@ export function scrollToId(id: string): boolean {
   return true;
 }
 
+/**
+ * WHO IS HOLDING THE PAGE STILL. Two things stop scrolling: the overture
+ * while it plays, and any modal surface (the photo lightbox). Lenis drives
+ * `scrollTo` itself, so `overflow: hidden` alone does not stop a wheel
+ * gesture — it has to be told, and only released when BOTH have let go.
+ */
+let introHeld = true;
+let modalHolds = 0;
+
+function applyHold(): void {
+  const held = introHeld || modalHolds > 0;
+  document.documentElement.classList.toggle('is-held', modalHolds > 0);
+  if (!lenis) return;
+  if (held) lenis.stop();
+  else lenis.start();
+}
+
+/**
+ * Holds the page still while `active`, and gives back exactly the scroll
+ * position it had: nothing is moved, only frozen. `scrollbar-gutter:
+ * stable` on the document means hiding the scrollbar shifts nothing
+ * sideways either.
+ */
+export function useScrollHold(active: boolean): void {
+  useEffect(() => {
+    if (!active) return;
+    modalHolds += 1;
+    applyHold();
+    return () => {
+      modalHolds -= 1;
+      applyHold();
+    };
+  }, [active]);
+}
+
 function SmoothScroll({ children }: { children: ReactNode }) {
   const reduced = useReducedMotion();
+  const { phase } = useContext(IntroContext);
 
   useEffect(() => {
     if (reduced === true) return;
@@ -796,6 +817,7 @@ function SmoothScroll({ children }: { children: ReactNode }) {
     });
 
     lenis = instance;
+    applyHold();
     const root = document.documentElement;
     let frame = 0;
     const onScroll = ({ progress }: { progress: number }) => {
@@ -817,6 +839,14 @@ function SmoothScroll({ children }: { children: ReactNode }) {
       root.style.removeProperty('--scroll');
     };
   }, [reduced]);
+
+  /* The stylesheet locks native scroll while the overture plays; Lenis
+     drives `scrollTo` itself and has to be told separately, or a wheel
+     gesture scrolls the page underneath the overlay. */
+  useEffect(() => {
+    introHeld = phase !== 'complete';
+    applyHold();
+  }, [phase, reduced]);
 
   return <>{children}</>;
 }
@@ -869,16 +899,41 @@ const IntroContext = createContext<{
   setPhase: (phase: IntroPhase) => void;
 }>({ phase: 'complete', setPhase: () => undefined });
 
+/**
+ * Whether this document has already resolved its intro. Module scope, so
+ * it survives the provider REMOUNTING — which it does on a language
+ * switch, because the provider lives in the `[lang]` layout.
+ */
+let introResolved = false;
+
 function IntroProvider({ children }: { children: ReactNode }) {
-  const reduced = useReducedMotion();
-  /* Starts `complete` on the server and for reduced motion, so nothing
-     is ever gated behind an overture that will not play. The overture
-     itself moves it to `opening` on mount when it decides to run. */
-  const [phase, setPhase] = useState<IntroPhase>('complete');
+  /**
+   * THE FIRST RENDER MUST SAY `opening`, and the previous revision's
+   * first render said `complete`.
+   *
+   * That was the overlap. The server rendered `complete`, so on the
+   * first client render every gated entrance — the header, the hero's
+   * whole score — was told Act II had begun and started animating; one
+   * effect later the overture set `opening` and they were yanked back to
+   * hidden. The page performed a fraction of its entrance underneath the
+   * overlay on every load, and on a slow device a visible fraction.
+   *
+   * Now the server and the hydrating client both start `opening` (they
+   * must agree, or hydration fails), and nothing gated can start until
+   * the head script's verdict is read. A remount after hydration starts
+   * wherever the document already is.
+   */
+  const [phase, setPhase] = useState<IntroPhase>(() =>
+    introResolved ? 'complete' : 'opening',
+  );
 
   useEffect(() => {
-    if (reduced === true) setPhase('complete');
-  }, [reduced]);
+    if (introResolved) return;
+    introResolved = true;
+    if (document.documentElement.getAttribute('data-intro') !== 'play') {
+      setPhase('complete');
+    }
+  }, []);
 
   return (
     <IntroContext.Provider value={{ phase, setPhase }}>{children}</IntroContext.Provider>

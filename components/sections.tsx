@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AnimatePresence,
   EASE,
   Motion,
+  turn,
   scrollToId,
   useInView,
   useMagnetic,
@@ -13,10 +15,12 @@ import {
   useReducedMotion,
   useActTwo,
   useSpring,
+  useMedia,
   useTransform,
 } from '@/lib/motion';
-import { crop, type Locale, type Passage, type Project, type ProjectImage } from '@/content/types';
-import { contact, disciplines, home, site, ui } from '@/content/site';
+import type { Locale, Passage, Photograph, Project, ProjectImage } from '@/content/types';
+import { framePhotograph, projectPhotographs } from '@/content/projects';
+import { contact, directions, disciplines, home, practice, site, ui } from '@/content/site';
 import { formatArea, ordinal, paths, whatsappLink } from '@/lib/site';
 import {
   Action,
@@ -25,16 +29,18 @@ import {
   CursorLabel,
   Eyebrow,
   Fill,
-  Frame,
   Grid,
   Item,
   Measure,
+  Print,
   Reveal,
   ScrollText,
   Section,
   SplitText,
   Stagger,
   TextLink,
+  openLightbox,
+  printAspect,
 } from '@/components/ui';
 
 /**
@@ -104,19 +110,12 @@ import {
  *           directional scrims are doing the real work, and every point
  *           of flat wash is contrast thrown away for nothing.
  *
- * THE PHONE DOES NOT GET A CENTRE-CROP. There is no 4:5 sibling for this
- * master, and covering a 0.46:1 phone viewport from a 1.578:1 plate
- * shows 29% of its width — the door and nothing else. Below 640px the
- * photograph is therefore a band across the top 56dvh, which is a 0.75:1
- * window holding 47% of the plate (the door, the garden and the desk),
- * and the type sits below it on clean paper with no scrim at all.
- *
- * `sizes` COMPENSATES FOR THE CROP, which is the one thing about this
- * component that will look wrong and is not. A hint of `100vw` describes
- * the ELEMENT, and when the element is showing 47% of the plate's width
- * the browser asks for less than half the pixels the visible part needs
- * and gets a soft image on the sharpest screen in the room. The phone
- * hint is `210vw` for that reason: 1/0.47.
+ * THE PHONE GETS THE WHOLE PLATE. A 1.578:1 render cannot cover a
+ * 0.46:1 phone without discarding most of it, and an earlier revision
+ * showed a 56svh band holding 47% of the plate's width, enlarged. Below
+ * 640px the photograph is now a full-width band at its own ratio, clear
+ * of the header, with the type beneath it on clean paper — the plate
+ * smaller and complete, as every photograph on the site now is.
  *
  * THE BACKGROUND MOVES, AND IT NEVER STOPS MOVING. Three layers, each
  * owning exactly one job, nested so no two ever write the same property:
@@ -163,8 +162,16 @@ export function Hero({ locale, credit }: { locale: Locale; credit: Project }) {
    * and returns the composition. The render is the product; the drift is
    * decoration on top of it.
    */
-  const bedY = useTransform(progress, [0, 1], ['0%', '9%']);
-  const bedScale = useTransform(progress, [0, 1], [1, 1.05]);
+  /* 6% travel over a 6% overhang, and a push-in of 2% rather than 5%:
+     the scroll scale compounds with the drift below, and at 1.05 x 1.04
+     the plate was being shown 9% over-size — enough to soften a render
+     that is the first thing anyone sees. */
+  const bedY = useTransform(progress, [0, 1], ['0%', '6%']);
+  const bedScale = useTransform(progress, [0, 1], [1, 1.02]);
+  /* The ambient drift is a desktop and tablet luxury. On a phone it is
+     a full-width layer animating forever, for a movement too small to
+     read on a 6-inch screen. */
+  const drifting = useMedia('(min-width: 640px)');
   const typeY = useTransform(progress, [0, 1], ['0%', '-28%']);
   /* The light going back down as the reader leaves for the work. Rests
      at 0.14 rather than 0.35: see the note on directional light above. */
@@ -200,44 +207,53 @@ export function Hero({ locale, credit }: { locale: Locale; credit: Project }) {
   const CUE = { head: 0.5, sub: 1.15, cta: 1.35, meta: 1.55, hint: 1.85 };
 
   return (
-    <section ref={section} className="relative flex min-h-dvh flex-col overflow-hidden">
+    /* `svh`, not `dvh`. A dynamic unit tracks the mobile browser's
+       collapsing toolbar, so the hero — and everything below it —
+       changed height and jumped the moment the visitor started to
+       scroll. The small viewport is the one height that never moves. */
+    <section ref={section} className="relative flex min-h-svh flex-col overflow-hidden">
       {/*
         THE PLATE. A band across the top on a phone, the whole viewport
         from 640px up — one element, two sizing models, because the crop
         a phone would otherwise take is not survivable. See the note on
         the component.
       */}
-      <div className="relative h-[56dvh] w-full shrink-0 overflow-hidden tablet:absolute tablet:inset-0 tablet:h-auto">
+      {/* On a phone the plate is shown WHOLE — a full-width band at the
+          photograph's own ratio, clear of the header — where it used to be
+          a 56svh band holding 47% of the render's width, enlarged. */}
+      <div className="relative mt-[4.75rem] aspect-[4000/2535] w-full shrink-0 overflow-hidden tablet:absolute tablet:inset-0 tablet:mt-0 tablet:aspect-auto tablet:h-auto">
         {/* SCROLL. The slack is what makes the translate safe: without it
             the layer is exactly viewport-sized and moving it exposes a
             band of empty page along one edge for the whole pass. Overhang
             and travel are kept equal and small — every extra percent of
             overhang is a percent of the render nobody ever sees. */}
         <Motion.div
-          className="absolute -inset-y-[9%] inset-x-0"
-          style={{ y: bedY, scale: bedScale }}
+          /* The parallax overhang is desktop and tablet only: on a phone
+             it would be cropping the plate it now shows whole. */
+          className="absolute inset-0 tablet:-inset-y-[6%]"
+          style={drifting ? { y: bedY, scale: bedScale } : {}}
         >
           {/* ENTRANCE */}
           <Motion.div
             className="absolute inset-0"
-            initial={{ clipPath: 'inset(6% 0% 6% 0%)', scale: 1.045 }}
+            initial={{ clipPath: 'inset(6% 0% 6% 0%)', scale: 1.02 }}
             animate={
               act2
                 ? { clipPath: 'inset(0% 0% 0% 0%)', scale: 1 }
-                : { clipPath: 'inset(6% 0% 6% 0%)', scale: 1.045 }
+                : { clipPath: 'inset(6% 0% 6% 0%)', scale: 1.02 }
             }
             transition={{ duration: 2.8, ease: EASE.expo }}
           >
             {/* DRIFT */}
             <Motion.div
               className="absolute inset-0"
-              {...(reduced === true || !act2
+              {...(reduced === true || !act2 || !drifting
                 ? {}
                 : {
                     animate: {
-                      scale: [1, 1.04, 1],
-                      x: ['0%', '-1.6%', '0%'],
-                      y: ['0%', '1.1%', '0%'],
+                      scale: [1, 1.02, 1],
+                      x: ['0%', '-0.9%', '0%'],
+                      y: ['0%', '0.6%', '0%'],
                     },
                     transition: {
                       duration: 16,
@@ -253,10 +269,9 @@ export function Hero({ locale, credit }: { locale: Locale; credit: Project }) {
               <Fill
                 src={home.stage.image}
                 alt=""
-                /* 210vw below the breakpoint is the crop compensation,
-                   not a typo — the band shows 47% of the plate's width,
-                   so a `100vw` hint would under-request by half. */
-                sizes="(max-width: 639px) 210vw, 100vw"
+                /* The band is the full width at the plate's own ratio on
+                   a phone, and the full viewport from 640px up. */
+                sizes="100vw"
                 focal={home.stage.focal}
                 priority
               />
@@ -340,7 +355,7 @@ export function Hero({ locale, credit }: { locale: Locale; credit: Project }) {
          * rail, and the block centres in what is left, so it cannot
          * overlap either at any height.
          */
-        className="relative z-10 flex flex-1 flex-col justify-end pb-7 pt-9 tablet:absolute tablet:inset-x-0 tablet:top-0 tablet:h-full tablet:justify-center tablet:pb-[9rem] tablet:pt-[7.5rem]"
+        className="relative z-10 flex flex-1 flex-col justify-center pb-7 pt-8 tablet:absolute tablet:inset-x-0 tablet:top-0 tablet:h-full tablet:justify-center tablet:pb-[9rem] tablet:pt-[7.5rem]"
         style={{ opacity, y: typeY }}
       >
         <Container>
@@ -617,22 +632,24 @@ export function Disciplines({ locale }: { locale: Locale }) {
         className="pointer-events-none fixed left-0 top-0 z-40 hidden desktop:block"
         style={{ x: cardX, y: cardY }}
       >
+        {/* A small print held above the pointer. It appears by scale and
+            opacity — transform only — where it used to grow its width and
+            height, which re-laid-out the card on every frame and cropped
+            the photograph while it did. */}
         <Motion.div
-          className="relative -translate-x-1/2 -translate-y-[115%] overflow-hidden bg-sunk"
+          className="-translate-x-1/2 -translate-y-[112%]"
           initial={false}
-          animate={{ width: shown ? 400 : 0, height: shown ? 267 : 0, opacity: shown ? 1 : 0 }}
-          transition={{ duration: 0.6, ease: EASE.expo }}
+          animate={{ scale: shown ? 1 : 0.9, opacity: shown ? 1 : 0 }}
+          transition={{ duration: 0.5, ease: EASE.expo }}
         >
-          {/* Built through `crop` rather than by hand: this was the one
-              photograph path on the site assembled from a string literal,
-              and it was therefore the one that did not follow when the
-              masters moved to `images-2`. */}
           {preview && (
-            <Fill
-              src={crop(preview.slug, preview.image, 'landscape')}
-              alt=""
-              sizes="400px"
+            <Print
+              photo={framePhotograph(preview.image)}
+              locale={locale}
+              sizes="360px"
               eager
+              rotate={-1}
+              className="w-[360px]"
             />
           )}
         </Motion.div>
@@ -738,6 +755,370 @@ export function Process({ stages, locale }: { stages: readonly Passage[]; locale
             </ul>
           </div>
         </Grid>
+      </Container>
+    </Section>
+  );
+}
+
+/* ================================================================== *
+ * HOME — IN PRACTICE
+ * ================================================================== */
+
+/**
+ * The studio at work — a short run of documentary photographs, turned
+ * like pages, between the work and the closing statement.
+ *
+ * WHY A SLIDESHOW AND NOT A GRID. The photographs are of very different
+ * shapes (4:3, 16:9, a 9:16 phone portrait) and qualities, and a grid
+ * would force them into one ratio or into a ragged wall. One at a time,
+ * each is shown whole at its own shape, as a print, as large as the stage
+ * allows — and never larger than the file has pixels, which matters for
+ * the three WhatsApp copies.
+ *
+ * NO LAYOUT JUMP. The stage has a fixed height at every breakpoint and
+ * slides are absolutely placed inside it, so a portrait following a
+ * landscape changes nothing around it. The caption line reserves two
+ * lines for the same reason.
+ *
+ * THE TURN. The outgoing print eases away 48px and fades while the next
+ * settles in from the other side — the gesture of turning a page, not of
+ * a carousel. Arrows, arrow keys (only while the section is centred on
+ * screen, and never while the lightbox has them), a sideways swipe, and a
+ * tap on the print to enlarge it. No autoplay: the reader sets the pace.
+ * The neighbouring photographs are mounted invisibly so a turn never
+ * shows a print arriving half-loaded.
+ */
+
+/** A print sized to fit the stage whole: its own ratio, the stage's
+ *  width or height (whichever binds), and never past its own pixels. */
+function StagedPrint({
+  photo,
+  locale,
+  onOpen,
+}: {
+  photo: Photograph;
+  locale: Locale;
+  onOpen?: (origin: HTMLElement) => void;
+}) {
+  return (
+    <div
+      style={{
+        width: `min(100cqw, calc(100cqh * ${String(printAspect(photo))}), ${String(photo.width)}px)`,
+      }}
+    >
+      <Print
+        photo={photo}
+        locale={locale}
+        sizes="(min-width: 1024px) 58vw, 92vw"
+        eager
+        {...(onOpen && { onOpen })}
+      />
+    </div>
+  );
+}
+
+export function Practice({ locale }: { locale: Locale }) {
+  const photos = practice.photographs;
+  const count = photos.length;
+  const [[index, direction], setState] = useState<[number, number]>([0, 0]);
+  const { ref: stage, inView } = useInView<HTMLDivElement>({
+    once: false,
+    rootMargin: '-35% 0px -35% 0px',
+  });
+
+  const go = useCallback(
+    (delta: number) => {
+      setState(([current]) => [(current + delta + count) % count, delta]);
+    },
+    [count],
+  );
+
+  /* Arrow keys while the section owns the screen — and not while the
+     lightbox is open, which uses the same keys for its own set. */
+  useEffect(() => {
+    if (!inView) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+      if (document.querySelector('[role="dialog"]')) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('input, textarea, select, [contenteditable]')) return;
+      event.preventDefault();
+      go(event.key === 'ArrowRight' ? 1 : -1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [inView, go]);
+
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const photo = photos[index] ?? photos[0];
+  const neighbours = [photos[(index + 1) % count], photos[(index - 1 + count) % count]];
+
+  const arrow =
+    'flex h-[44px] w-[44px] items-center justify-center border border-line text-ink-2 transition-colors duration-300 ease-expo hover:border-line-strong hover:text-ink';
+
+  return (
+    <Section rhythm="default" label={practice.title[locale]}>
+      <Container>
+        <Grid className="desktop:grid-rows-[auto_1fr]">
+          {/* The heading: the label, then one line on what the photographs
+              show. */}
+          <div className="col-span-4 tablet:col-span-8 desktop:col-span-4 desktop:row-start-1">
+            <Eyebrow>{practice.title[locale]}</Eyebrow>
+            <Reveal delay={0.1}>
+              <p className="mt-7 max-w-[22ch] font-display text-statement text-ink desktop:mt-8">
+                {practice.intro[locale]}
+              </p>
+            </Reveal>
+          </div>
+
+          {/* THE STAGE — a fixed-height size container. */}
+          <div
+            ref={stage}
+            className="relative col-span-4 mt-8 h-[min(58svh,118vw)] touch-pan-y [container-type:size] tablet:col-span-8 tablet:h-[min(62svh,78vw)] desktop:col-span-8 desktop:col-start-5 desktop:row-span-2 desktop:row-start-1 desktop:mt-0 desktop:h-[min(76svh,44vw)]"
+            onTouchStart={(event) => {
+              const touch = event.touches[0];
+              swipe.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+            }}
+            onTouchEnd={(event) => {
+              const touch = event.changedTouches[0];
+              const start = swipe.current;
+              swipe.current = null;
+              if (!start || !touch) return;
+              const dx = touch.clientX - start.x;
+              if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(touch.clientY - start.y) * 1.5) {
+                go(dx < 0 ? 1 : -1);
+              }
+            }}
+          >
+            {/* The neighbours, loaded and decoded but not shown. */}
+            <div aria-hidden="true" className="pointer-events-none invisible absolute inset-0">
+              {neighbours.map((neighbour) =>
+                neighbour ? (
+                  <div key={neighbour.src} className="absolute inset-0 flex items-center justify-center">
+                    <StagedPrint photo={neighbour} locale={locale} />
+                  </div>
+                ) : null,
+              )}
+            </div>
+            <AnimatePresence initial={false} custom={direction}>
+                <Motion.div
+                  key={photo.src}
+                  custom={direction}
+                  variants={turn}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <StagedPrint
+                    photo={photo}
+                    locale={locale}
+                    onOpen={(origin) => {
+                      openLightbox({ photos, index, origin, locale });
+                    }}
+                  />
+                </Motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* The count, the caption, the way through. */}
+          <div className="col-span-4 mt-6 tablet:col-span-8 desktop:col-span-4 desktop:row-start-2 desktop:mt-0 desktop:self-end">
+            <div className="flex items-end justify-between gap-6 desktop:block">
+              <div className="min-w-0 flex-1">
+                <p className="figures label text-ink-3">
+                  <span className="text-ink">{String(index + 1).padStart(2, '0')}</span>
+                  <span aria-hidden="true"> / </span>
+                  {String(count).padStart(2, '0')}
+                </p>
+                {/* Every caption sits in the SAME grid cell, all but the
+                    current one invisible — so the block is always exactly
+                    as tall as the longest caption at this width and in this
+                    language, and turning a page never moves the page. (A
+                    fixed two-line reserve was not enough: on a 320px phone
+                    the Indonesian captions wrap to three.) */}
+                <div className="mt-3 grid max-w-[32ch] font-text text-body text-ink-2">
+                  {photos.map((entry, position) => (
+                    <p
+                      key={entry.src}
+                      aria-hidden={position !== index}
+                      {...(position === index && { 'aria-live': 'polite' as const })}
+                      className={`col-start-1 row-start-1 ${position === index ? '' : 'invisible'}`}
+                    >
+                      {entry.alt[locale]}
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2 desktop:mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    go(-1);
+                  }}
+                  aria-label={practice.previous[locale]}
+                  className={arrow}
+                >
+                  <Arrow className="w-[20px] rotate-180" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    go(1);
+                  }}
+                  aria-label={practice.next[locale]}
+                  className={arrow}
+                >
+                  <Arrow className="w-[20px]" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </Grid>
+      </Container>
+    </Section>
+  );
+}
+
+/* ================================================================== *
+ * HOME — NEW DIRECTIONS
+ * ================================================================== */
+
+/**
+ * Where the studio is going next: Larkscapes.id and Larkworks.id, the
+ * permanent home of the announcement (same content, `directions` in
+ * content/site.ts), between the studio at work and the closing statement.
+ *
+ * NOT PROJECTS, SO NOT PROJECT CARDS. Each initiative is an editorial
+ * spread — a set of whole prints on one side, the field, the name and a
+ * short statement on the other — mirrored for the second so the two read
+ * as siblings: same type, same rhythm, same furniture, different
+ * photographs. Larkscapes' renders are wide, so its spread is a large
+ * print over a row of three; Larkworks' photographs are tall, so its
+ * spread is three portrait prints in a row, the middle one set lower,
+ * like prints laid on a table. Every print opens the lightbox on the
+ * initiative's whole library.
+ */
+type DirectionItem = (typeof directions.initiatives)[number];
+
+function DirectionSpread({ item, locale }: { item: DirectionItem; locale: Locale }) {
+  const [lead, ...rest] = item.feature;
+  const open = (photo: Photograph) => (origin: HTMLElement) => {
+    openLightbox({ photos: item.library, index: item.library.indexOf(photo), origin, locale });
+  };
+  const wide = lead.width > lead.height;
+
+  if (wide) {
+    return (
+      <div>
+        <Reveal>
+          <Print photo={lead} locale={locale} sizes="(min-width: 1024px) 54vw, 92vw" rotate={-0.4} onOpen={open(lead)} />
+        </Reveal>
+        <div className="mt-5 grid grid-cols-3 gap-3 tablet:mt-6 tablet:gap-5">
+          {rest.map((photo, i) => (
+            <Reveal key={photo.src} delay={0.08 * (i + 1)}>
+              <Print
+                photo={photo}
+                locale={locale}
+                sizes="(min-width: 1024px) 18vw, 31vw"
+                rotate={[0.9, -0.6, 1.1][i] ?? 0}
+                onOpen={open(photo)}
+              />
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  /* Portraits: three in a row, the middle one set lower. */
+  return (
+    <div className="grid grid-cols-3 items-start gap-3 tablet:gap-5">
+      {[lead, ...rest].slice(0, 3).map((photo, i) => (
+        <Reveal key={photo.src} delay={0.08 * i} className={i === 1 ? 'mt-8 tablet:mt-10' : ''}>
+          <Print
+            photo={photo}
+            locale={locale}
+            sizes="(min-width: 1024px) 18vw, 31vw"
+            rotate={[-0.8, 0.6, -1][i] ?? 0}
+            onOpen={open(photo)}
+          />
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
+export function Directions({ locale }: { locale: Locale }) {
+  return (
+    <Section id="directions" rhythm="default" label={directions.title[locale]}>
+      <Container>
+        <Grid>
+          <div className="col-span-4 tablet:col-span-8 desktop:col-span-4">
+            <Eyebrow>{directions.title[locale]}</Eyebrow>
+          </div>
+          <div className="col-span-4 mt-7 tablet:col-span-8 desktop:col-span-8 desktop:mt-0">
+            <Reveal>
+              <p className="max-w-[30ch] font-display text-statement text-ink">{directions.story[locale]}</p>
+            </Reveal>
+          </div>
+        </Grid>
+
+        <div className="mt-10 flex flex-col gap-11 desktop:mt-11 desktop:gap-12">
+          {directions.initiatives.map((item, index) => {
+            const mirror = index % 2 === 1;
+            return (
+              <article
+                key={item.key}
+                aria-labelledby={`direction-${item.key}`}
+                className="grid grid-cols-4 gap-x-4 tablet:grid-cols-8 tablet:gap-x-5 desktop:grid-cols-12 desktop:items-center"
+              >
+                <div
+                  className={`col-span-4 tablet:col-span-8 desktop:col-span-7 desktop:row-start-1 ${
+                    mirror ? 'desktop:col-start-6' : 'desktop:col-start-1'
+                  }`}
+                >
+                  <DirectionSpread item={item} locale={locale} />
+                </div>
+                <div
+                  className={`col-span-4 mt-8 tablet:col-span-6 desktop:col-span-4 desktop:row-start-1 desktop:mt-0 ${
+                    mirror ? 'desktop:col-start-1' : 'desktop:col-start-9'
+                  }`}
+                >
+                  <Reveal>
+                    <p className="label flex items-center gap-2 text-ink-2">
+                      <span aria-hidden="true" className="h-[6px] w-[6px] rounded-full bg-brass" />
+                      {item.field[locale]}
+                    </p>
+                    <h3
+                      id={`direction-${item.key}`}
+                      className="mt-4 font-display text-[clamp(2.5rem,1.4rem+3.6vw,4.5rem)] font-medium leading-[1.02] text-ink"
+                    >
+                      {item.name}
+                    </h3>
+                    <p className="mt-5 max-w-[40ch] font-text text-body text-ink-2">{item.body[locale]}</p>
+                  </Reveal>
+                  <Reveal delay={0.12}>
+                    <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4">
+                      <Action href={paths.contact(locale)}>{item.action[locale]}</Action>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          openLightbox({ photos: item.library, index: 0, origin: event.currentTarget, locale });
+                        }}
+                        className="sweep inline-flex min-h-[44px] items-center font-text text-spec text-ink-2 transition-colors duration-300 ease-expo hover:text-ink"
+                      >
+                        {directions.viewAll[locale]}
+                        <span className="figures ml-2 text-ink-3">{String(item.library.length).padStart(2, '0')}</span>
+                      </button>
+                    </div>
+                  </Reveal>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </Container>
     </Section>
   );
@@ -988,70 +1369,64 @@ export function ContactPanel({ locale }: { locale: Locale }) {
  * ================================================================== */
 
 /**
- * The cover. Full bleed, the name over its lower edge, and nothing else.
+ * A PROJECT OPENS ON ITS LEAD PHOTOGRAPH, WHOLE.
  *
- * The title used to sit in a separate section beneath the image, which
- * meant a project page opened with a picture nobody could name for
- * another screen. Overlaying it costs a scrim and makes the first
- * viewport self-describing.
+ * This used to be a full-bleed cover with the name set over it — which on
+ * a phone meant the 4:5 export, a 53% centre crop of the render enlarged
+ * 1.7×, under a 60% scrim. Now the name comes first, on the page, and the
+ * lead photograph follows as a large print: its own 3:2, in its border,
+ * as big as the screen allows without cropping a pixel — and it can be
+ * picked up and enlarged like every print on the site.
  */
 export function ProjectHero({ project, locale }: { project: Project; locale: Locale }) {
-  const section = useRef<HTMLElement>(null);
-  const progress = useProgress(section, ['start start', 'end start']);
-  const opacity = useTransform(progress, [0, 0.75], [1, 0]);
-  const y = useTransform(progress, [0, 1], ['0%', '3%']);
   const opening = project.images[0];
   if (!opening) return null;
+  const photos = projectPhotographs(project);
+  const lead = photos[0];
+  if (!lead) return null;
 
   return (
-    <section ref={section} className="relative aspect-[4/5] overflow-hidden tablet:aspect-[3/2]">
-      <Motion.div className="absolute -inset-y-[3%] inset-x-0" style={{ y }}>
-        <Motion.div
-          className="absolute inset-0"
-          initial={{ clipPath: 'inset(4% 0% 4% 0%)', scale: 1.02 }}
-          animate={{ clipPath: 'inset(0% 0% 0% 0%)', scale: 1 }}
-          transition={{ duration: 1.6, ease: EASE.expo }}
+    <section className="relative pb-8 pt-10 tablet:pb-9 desktop:pt-[9.5rem]">
+      <Container>
+        <Motion.p
+          className="label text-ink-2"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: EASE.expo, delay: 0.35 }}
         >
-          <Fill
-            src={crop(project.slug, opening.id, 'landscape')}
-            portrait={crop(project.slug, opening.id, 'portrait')}
-            alt={opening.alt[locale]}
-            sizes="100vw"
-            focal={opening.focal}
+          {project.type[locale]} · {project.location[locale]}
+        </Motion.p>
+        <SplitText
+          as="h1"
+          text={project.name[locale]}
+          mode="chars"
+          immediate
+          delay={0.45}
+          className="mt-4 font-display text-hero text-ink"
+        />
+
+        {/* As wide as the column, and never so tall that the print runs
+            under the fold on a laptop: the width is capped by the small
+            viewport height, less the ~25rem the header and title take,
+            at the print's own ratio. */}
+        <Motion.div
+          className="mx-auto mt-8 w-full desktop:mt-9 desktop:w-[min(100%,calc((100svh-25rem)*1.45))]"
+          initial={{ opacity: 0, y: 28, rotate: -1.4 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ duration: 1.4, ease: EASE.expo, delay: 0.5 }}
+        >
+          <Print
+            photo={lead}
+            locale={locale}
+            sizes="(min-width: 1760px) 1600px, 92vw"
             priority
+            rotate={-0.4}
+            onOpen={(origin) => {
+              openLightbox({ photos, index: 0, origin, locale });
+            }}
           />
         </Motion.div>
-        <div aria-hidden="true" className="absolute inset-0 bg-paper/28" />
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-paper via-paper/70 to-transparent"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-[18%] bg-gradient-to-b from-paper/75 to-transparent"
-        />
-      </Motion.div>
-
-      <Motion.div className="absolute inset-x-0 bottom-0 pb-9" style={{ opacity }}>
-        <Container>
-          <Motion.p
-            className="label text-ink-2"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: EASE.expo, delay: 0.5 }}
-          >
-            {project.type[locale]} · {project.location[locale]}
-          </Motion.p>
-          <SplitText
-            as="h1"
-            text={project.name[locale]}
-            mode="chars"
-            immediate
-            delay={0.6}
-            className="mt-4 font-display text-hero text-ink"
-          />
-        </Container>
-      </Motion.div>
+      </Container>
     </section>
   );
 }
@@ -1064,10 +1439,14 @@ export function ProjectHero({ project, locale }: { project: Project; locale: Loc
  * ticking is performing rather than stating.
  */
 export function ProjectFacts({ project, locale }: { project: Project; locale: Locale }) {
+  /* Only what the studio has stated: a project with no recorded area
+     shows three facts, never a placeholder. */
   const facts = [
     { key: 'type', label: ui.type[locale], value: project.type[locale] },
     { key: 'location', label: ui.location[locale], value: project.location[locale] },
-    { key: 'area', label: ui.area[locale], value: formatArea(project.area, locale) },
+    ...(project.area === undefined
+      ? []
+      : [{ key: 'area', label: ui.area[locale], value: formatArea(project.area, locale) }]),
     { key: 'year', label: ui.year[locale], value: String(project.year) },
   ];
 
@@ -1078,7 +1457,10 @@ export function ProjectFacts({ project, locale }: { project: Project; locale: Lo
         <Stagger className="mt-8" each={0.08}>
           <Grid>
             {facts.map((fact) => (
-              <Item key={fact.key} className="col-span-2 tablet:col-span-2 desktop:col-span-3">
+              /* Two by two until 1024px. Four across on a tablet gave
+                 each fact ~150px, and a `title`-size "Coffee Shop" or
+                 "Denpasar, Bali" broke onto a second line in all four. */
+              <Item key={fact.key} className="col-span-2 tablet:col-span-4 desktop:col-span-3">
                 <div className="border-t border-line pt-4">
                   <p className="label text-ink-3">{fact.label}</p>
                   <p className="figures mt-2 font-display text-title text-ink">{fact.value}</p>
@@ -1093,16 +1475,17 @@ export function ProjectFacts({ project, locale }: { project: Project; locale: Lo
 }
 
 /**
- * A single plate: one photograph at the size its master can carry, with
- * its caption in the margin beneath.
+ * A plate: one photograph as a print, at the size its master can carry,
+ * with its caption beneath.
  *
- * `lead` runs full bleed, `wide` is held to the container, and a pair of
- * consecutive `detail` frames is set as a diptych — two half-width
- * plates side by side. The diptych is the one composition on the site
- * that is not a single column, and it exists for a specific reason: the
- * documentary frames are the smallest masters, and two of them together
- * read as a deliberate pairing rather than as two images that were not
- * good enough to be large.
+ * `lead` spans the column, `wide` is held to 80% of it, and a pair of
+ * consecutive `detail` frames is set as a diptych. Every print is the
+ * whole photograph at its own ratio — nothing is cropped to a slot — and
+ * every one opens the lightbox on the project's full set, so the gallery
+ * can be read one photograph at a time, large.
+ *
+ * Prints alternate a fraction of a degree either way: enough to read as
+ * paper laid on a surface, never enough to put a building on a slant.
  */
 function Plate({
   project,
@@ -1117,37 +1500,46 @@ function Plate({
   const first = images[0];
   if (!first) return null;
   const full = !diptych && first.weight === 'lead';
+  const photos = projectPhotographs(project);
 
-  const figure = (image: ProjectImage, sizes: string) => (
-    <figure key={image.id}>
-      <Frame
-        slug={project.slug}
-        image={image}
-        locale={locale}
-        sizes={sizes}
-        parallax={full ? 14 : 18}
-        reveal={full ? 'curtain' : 'wipe'}
-      />
-      {image.caption !== undefined && (
-        <Reveal delay={0.1}>
-          <figcaption className="mt-4 font-text text-caption text-ink-3">
-            {image.caption[locale]}
-          </figcaption>
+  const figure = (image: ProjectImage, sizes: string) => {
+    const index = project.images.findIndex((candidate) => candidate.id === image.id);
+    const photo = photos[index];
+    if (!photo) return null;
+    return (
+      <figure key={image.id}>
+        <Reveal>
+          <Print
+            photo={photo}
+            locale={locale}
+            sizes={sizes}
+            rotate={index % 2 === 0 ? 0.4 : -0.4}
+            onOpen={(origin) => {
+              openLightbox({ photos, index, origin, locale });
+            }}
+          />
         </Reveal>
-      )}
-    </figure>
-  );
-
-  if (full) return figure(first, '100vw');
+        {image.caption !== undefined && (
+          <Reveal delay={0.1}>
+            <figcaption className="mt-4 font-text text-caption text-ink-3">
+              {image.caption[locale]}
+            </figcaption>
+          </Reveal>
+        )}
+      </figure>
+    );
+  };
 
   return (
     <Container>
       {diptych ? (
-        <div className="grid grid-cols-1 gap-6 tablet:grid-cols-2 tablet:gap-6 desktop:gap-7">
-          {images.map((image) => figure(image, '(min-width: 640px) 46vw, 100vw'))}
+        <div className="grid grid-cols-1 gap-8 tablet:grid-cols-2 tablet:gap-6 desktop:gap-8">
+          {images.map((image) => figure(image, '(min-width: 640px) 46vw, 92vw'))}
         </div>
       ) : (
-        <div className="mx-auto desktop:w-[80%]">{figure(first, '(min-width: 1024px) 80vw, 100vw')}</div>
+        <div className={full ? '' : 'mx-auto desktop:w-[80%]'}>
+          {figure(first, full ? '(min-width: 1760px) 1600px, 92vw' : '(min-width: 1024px) 74vw, 92vw')}
+        </div>
       )}
     </Container>
   );
@@ -1199,6 +1591,9 @@ export function Plates({ project, locale }: { project: Project; locale: Locale }
  *  the only other block on the site written to be read rather than
  *  scanned. */
 export function Outcome({ project, locale }: { project: Project; locale: Locale }) {
+  /* No write-up yet: the section is left out, not filled. */
+  if (!project.outcome) return null;
+  const outcome = project.outcome[locale];
   return (
     <Section rhythm="loose">
       <Container>
@@ -1208,7 +1603,7 @@ export function Outcome({ project, locale }: { project: Project; locale: Locale 
           </div>
           <div className="col-span-4 mt-7 tablet:col-span-8 desktop:col-span-8 desktop:col-start-5 desktop:mt-0">
             <ScrollText
-              text={project.outcome[locale]}
+              text={outcome}
               className="font-display text-statement text-ink"
             />
           </div>
@@ -1219,66 +1614,39 @@ export function Outcome({ project, locale }: { project: Project; locale: Locale 
 }
 
 /**
- * The next project, full bleed, with its name over the frame.
- *
- * At the end of a project page the next project is the primary action,
- * not an afterthought — so it is given the same weight as the page's own
- * cover, and the cursor names it.
+ * The next project, as its lead print beside its name. The whole block is
+ * the link; the print is the photograph whole, as everywhere else.
  */
 export function NextProject({ project, locale }: { project: Project; locale: Locale }) {
-  const { ref, inView } = useInView<HTMLDivElement>({ rootMargin: '600px 0px 600px 0px' });
-  const opening = project.images[0];
-  if (!opening) return null;
+  const photos = projectPhotographs(project);
+  const lead = photos[0];
+  if (!lead) return null;
 
   return (
     <Section rhythm="tight">
       <Container>
         <Eyebrow>{ui.nextProject[locale]}</Eyebrow>
-      </Container>
-
-      <div className="mt-8">
-        <CursorLabel label={ui.viewProject[locale]} className="block">
-          <Link href={paths.project(locale, project.slug)} className="group relative block">
-            <div ref={ref} className="relative aspect-[4/5] overflow-hidden bg-sunk tablet:aspect-[3/2]">
-              <Motion.div
-                className="absolute inset-0"
-                initial={{ clipPath: 'inset(0% 0% 100% 0%)' }}
-                animate={inView ? { clipPath: 'inset(0% 0% 0% 0%)' } : {}}
-                transition={{ duration: 1.2, ease: EASE.expo }}
-              >
-                <Fill
-                  src={crop(project.slug, opening.id, 'landscape')}
-                  portrait={crop(project.slug, opening.id, 'portrait')}
-                  alt={opening.alt[locale]}
-                  sizes="100vw"
-                  focal={opening.focal}
-                  eager={inView}
-                  className="transition-transform duration-[1400ms] ease-expo group-hover:scale-[1.02]"
-                />
-              </Motion.div>
-              {/* The light coming up. The wash starts heavy and lifts over
-            1.8s, so the building resolves out of the dark rather than
-            being revealed by a curtain — the quietest possible way to
-            make a still photograph an event. */}
-        <Motion.div
-          aria-hidden="true"
-          className="absolute inset-0 bg-paper"
-          initial={{ opacity: 0.8 }}
-          animate={{ opacity: 0.35 }}
-          transition={{ duration: 1.8, ease: EASE.expo }}
-        />
-              <div className="absolute inset-x-0 bottom-0 p-5 tablet:p-8">
-                <Container>
-                  <div className="flex items-end justify-between gap-5">
-                    <h2 className="font-display text-display text-ink">{project.name[locale]}</h2>
-                    <Arrow className="mb-3 shrink-0 text-ink transition-transform duration-500 ease-expo group-hover:translate-x-3" />
-                  </div>
-                </Container>
-              </div>
+        <CursorLabel label={ui.viewProject[locale]} className="mt-8 block">
+          <Link
+            href={paths.project(locale, project.slug)}
+            className="group grid grid-cols-1 items-end gap-6 tablet:grid-cols-12 tablet:gap-7"
+          >
+            <Reveal className="tablet:col-span-7 desktop:col-span-6">
+              <Print
+                photo={lead}
+                locale={locale}
+                sizes="(min-width: 640px) 56vw, 92vw"
+                rotate={0.8}
+                className="transition-transform duration-700 ease-expo group-hover:-translate-y-[6px]"
+              />
+            </Reveal>
+            <div className="flex items-end justify-between gap-5 tablet:col-span-5 tablet:pb-4 desktop:col-span-5 desktop:col-start-8">
+              <h2 className="font-display text-display text-ink">{project.name[locale]}</h2>
+              <Arrow className="mb-3 shrink-0 text-ink transition-transform duration-500 ease-expo group-hover:translate-x-3" />
             </div>
           </Link>
         </CursorLabel>
-      </div>
+      </Container>
     </Section>
   );
 }

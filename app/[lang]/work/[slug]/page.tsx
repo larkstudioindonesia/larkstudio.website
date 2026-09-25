@@ -47,7 +47,11 @@ export async function generateMetadata({
 
   return buildMetadata({
     title: `${project.name[locale]} — ${project.type[locale]}`,
-    description: project.outcome[locale],
+    /* The write-up when there is one; otherwise the stated facts,
+       assembled — never invented copy. */
+    description:
+      project.outcome?.[locale] ??
+      `${project.name[locale]} — ${project.type[locale]}, ${project.location[locale]}, ${String(project.year)}.`,
     path: paths.project(locale, project.slug),
     locale,
     image: `/og/${project.slug}.jpg`,

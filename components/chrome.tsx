@@ -2,8 +2,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import {
   AnimatePresence,
   EASE,
@@ -16,14 +24,15 @@ import {
   stagger,
   useCursorLabel,
   useEscape,
-  useFirstVisit,
   useFocusTrap,
+  useHeaderHeld,
   useInView,
   usePointer,
   useProgress,
   useReducedMotion,
   useScroll,
   useScrollDirection,
+  useScrollHold,
   useScrollLock,
   useScrolled,
   useSpring,
@@ -31,11 +40,13 @@ import {
   useIntro,
   useToggle,
   useTransform,
+  turn,
 } from '@/lib/motion';
-import { crop, LOCALES, type Locale } from '@/content/types';
-import { site, ui } from '@/content/site';
+import { LOCALES, type Locale, type Photograph } from '@/content/types';
+import { ARCHIVE, framePhotograph } from '@/content/projects';
+import { directions, site, ui } from '@/content/site';
 import { LOCALE_LABEL, paths, translatePath, whatsappLink } from '@/lib/site';
-import { Container, Figures, Fill, Grid, TextLink } from '@/components/ui';
+import { Arrow, Container, Figures, Grid, Print, TextLink, printAspect } from '@/components/ui';
 
 /**
  * LARK STUDIO — THE SHELL
@@ -242,7 +253,8 @@ export function Header({ locale }: { locale: Locale }) {
   const scrolled = useScrolled(80);
   const direction = useScrollDirection();
   const menu = useToggle(false);
-  const hidden = direction === 'down' && !menu.on;
+  const held = useHeaderHeld();
+  const hidden = (direction === 'down' || held) && !menu.on;
 
   return (
     <>
@@ -330,6 +342,9 @@ export function Header({ locale }: { locale: Locale }) {
             animate={act2 ? 'visible' : 'hidden'}
           >
             <Motion.div variants={fadeUp}>
+              <AnnouncementEntry locale={locale} />
+            </Motion.div>
+            <Motion.div variants={fadeUp}>
               <Navigation locale={locale} />
             </Motion.div>
             <Motion.span aria-hidden="true" variants={fadeUp} className="h-4 w-px bg-line-strong" />
@@ -338,13 +353,18 @@ export function Header({ locale }: { locale: Locale }) {
             </Motion.div>
           </Motion.div>
 
+          {/* Gated like the rest of the bar. It used to run on its own
+              clock and finish behind the overture on every phone. */}
           <Motion.div
             className="desktop:hidden"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: act2 ? 1 : 0 }}
             transition={{ duration: 0.6, ease: EASE.expo, delay: 0.35 }}
           >
-            <MenuTrigger open={menu.on} onToggle={menu.toggle} locale={locale} />
+            <div className="flex items-center gap-5">
+              <AnnouncementEntry locale={locale} />
+              <MenuTrigger open={menu.on} onToggle={menu.toggle} locale={locale} />
+            </div>
           </Motion.div>
         </div>
       </Motion.header>
@@ -610,7 +630,16 @@ export function Footer({ locale }: { locale: Locale }) {
     [0.05, 0.8],
     ['inset(0% 0% 100% 0%)', 'inset(0% 0% 0% 0%)'],
   );
-  const reduced = useReducedMotion();
+  /* Read AFTER mount. The server cannot know the preference and renders
+     the scroll-linked styles; a first client render that already knew
+     would drop them, and hydration would not match. One effect later the
+     reduced-motion branch applies. */
+  const prefersReduced = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const reduced = mounted && prefersReduced === true;
 
   return (
     <footer
@@ -693,7 +722,7 @@ export function Footer({ locale }: { locale: Locale }) {
             /* Spread rather than a conditional `style` prop:
                `exactOptionalPropertyTypes` rejects an explicit
                `undefined` where the prop is merely optional. */
-            {...(reduced === true
+            {...(reduced
               ? {}
               : {
                   style: {
@@ -711,7 +740,7 @@ export function Footer({ locale }: { locale: Locale }) {
                 <Motion.span
                   key={i}
                   className="inline-block will-change-transform"
-                  initial={reduced === true ? false : { y: '118%' }}
+                  initial={reduced ? false : { y: '118%' }}
                   animate={inView ? { y: '0%' } : { y: '118%' }}
                   transition={{ duration: 1.25, ease: EASE.expo, delay: i * 0.055 }}
                 >
@@ -727,7 +756,7 @@ export function Footer({ locale }: { locale: Locale }) {
         <Motion.span
           aria-hidden="true"
           className="mt-7 block h-px w-full origin-left bg-bone-line"
-          initial={reduced === true ? false : { scaleX: 0 }}
+          initial={reduced ? false : { scaleX: 0 }}
           animate={inView ? { scaleX: 1 } : { scaleX: 0 }}
           transition={{ duration: 1.6, ease: EASE.quart, delay: 0.85 }}
         />
@@ -751,449 +780,1026 @@ export function Footer({ locale }: { locale: Locale }) {
  * DOCUMENT CHROME
  * ================================================================== */
 
-/**
- * THE OVERTURE — a 5.6-second arrival, shown once per browsing session.
- *
- * WHAT IT IS NOT: a loading screen. It does not wait on the network, it
- * does not gate hydration, and it measures nothing. The page is fully
- * rendered behind it the whole time. The previous revision ran 1.6s and
- * put a 000–100 counter in the corner, which is the one device that
- * makes a framing sequence read as a progress bar lying about what it
- * measures — the counter is gone and nothing replaced it.
- *
- * THE SEQUENCE IS BUILT FROM THE VOCABULARY OF A DRAWING, not from the
- * vocabulary of a loader. There are no spinners, bars, percentages or
- * particles. There is a datum line, a set of column gridlines, a mark,
- * a name, and then the drawing opens:
- *
- *   0.00  black. The datum — a single hairline — draws out from the
- *         centre to the full width. An architect's first mark.
- *   0.90  five vertical gridlines drop from the datum on a stagger,
- *         the way a column grid is set out from a datum.
- *   1.50  the monogram fades up on the datum's left.
- *   2.10  LARK STUDIO rises, letter by letter, from behind the datum.
- *   3.10  the locality line and the year fade in beneath.
- *   3.70  the tracking on the wordmark relaxes from wide to normal as
- *         the gridlines retract — the drawing resolving into a title.
- *   4.60  APERTURE. A `clip-path` inset opens from the datum outward,
- *         top and bottom together, and the landing page is simply
- *         THERE behind it. Not a fade to the site — an opening onto it.
- *   5.60  the overlay unmounts. The hero's own 2.4s entrance is already
- *         running underneath by then, so the handover is continuous.
- *
- * WHY IT IS SAFE: `position: fixed` over an already-complete document,
- * so it cannot delay paint of the content beneath; skipped on every
- * subsequent navigation, on reduced motion, and if storage is
- * unavailable. The failure mode in every direction is "no overture",
- * which is the correct one. Scroll is locked for its duration and
- * released by the same state that unmounts it.
- *
- * ESCAPE HATCH: any key, click or touch skips to the aperture. A
- * visitor who has seen it once and cleared their storage should never
- * feel held, and 5.6 seconds is long enough that not offering the exit
- * would be arrogant.
- */
 /* ------------------------------------------------------------------ *
- * THE OVERTURE — a title sequence cut from the studio's own work
+ * THE OVERTURE — the studio's album, opened
  * ------------------------------------------------------------------ */
 
 /**
- * EIGHT SHOTS, FULL BLEED, EACH CUT DIFFERENTLY.
+ * A PHYSICAL ALBUM, OPENED IN FRONT OF THE VISITOR.
  *
- * The previous version put six small rectangles on a black field, all
- * entering with the same clip and the same scale on the same metronome.
- * That is a slide deck. Three things make this a film instead:
+ * The previous revision laid prints on a dark field, which read as
+ * "photos on a canvas". This one is an OBJECT: a cloth-bound portfolio
+ * lying on a dark studio table, lit from the upper left, that opens.
  *
- * 1. THE SHOTS FILL THE FRAME. Every shot is `inset-0`, so the warm
- *    timber, the green of a garden, the sky over a facade and the light
- *    off a tiled floor are what the screen actually IS for that beat.
- *    The colour comes from the architecture — that is the whole answer
- *    to "too monochromatic", and it is why the shots had to get big.
- * 2. NO TWO CUTS ARE THE SAME. Six clip geometries — a letterbox slit
- *    opening, a vertical iris, wipes from each edge, a corner band —
- *    paired with a different scale/drift per shot. The eye cannot
- *    predict the next transition, which is the difference between
- *    rhythm and a metronome.
- * 3. IT ACCELERATES. Shots 1–2 hold ~1.1s (discovery), 3–5 tighten to
- *    ~0.62s (build), 6–8 land at ~0.42s (climax). The cuts get faster
- *    and the moves get bigger, so the sequence arrives somewhere
- *    instead of merely continuing.
+ *   0.2  the closed album comes to rest on the table — charcoal cloth,
+ *        a blind-embossed rule, the monogram and the name foil-stamped
+ *        in the studio's brass. Page edges show at the fore-edge and
+ *        foot, so it has thickness.
+ *   1.5  the cover swings open on its spine: `rotateY` about the left
+ *        edge, under a modest perspective, while the album slides left
+ *        so the opened spread ends up centred. As the board turns, its
+ *        outside falls into shadow and its inside comes up into the
+ *        light; the shadow the board casts across the first page lifts
+ *        away. Front and back are two faces of one board, so the inside
+ *        of the cover BECOMES the left page — the viewer sees one object
+ *        open, not a card flip.
+ *   3.4  prints are laid onto the warm paper one at a time — the lead
+ *        first — each arriving a few pixels high and a degree turned,
+ *        then settling with its shadow.
+ *   4.9  only once the spread is composed does the name appear, set on
+ *        the title page like a book's half-title: left-aligned, a rule,
+ *        the disciplines, the place. Folios and a caption finish it.
+ *   7.6  the album is set down and the site is there.
  *
- * DEPTH comes from two layers per shot moving at different rates: the
- * clip is on the outer element, the scale and drift on the inner one,
- * so the frame and its contents never travel together. No perspective,
- * no translateZ, no tilt — the architecture is never distorted.
+ * A PHONE GETS A PAGE, NOT A SHRUNK SPREAD. The album is a single
+ * portrait page; the cover swings open toward the viewer and away, and
+ * the page beneath holds a lead print, two smaller prints and the name.
+ * Portrait tablets take the same composition, larger.
+ *
+ * EVERY PHOTOGRAPH IS WHOLE — `Print`, at its own ratio. The album is
+ * sized to the small viewport (`svh`) and the safe areas, and every
+ * position inside it is a percentage of the album, so the whole object
+ * scales as one: when a screen is small, the album is smaller; nothing
+ * is ever cropped to fit.
+ *
+ * 3D IS HELD TO ONE HINGE. A single board rotates about a single edge
+ * under a 2600px perspective — no camera move, no page curl, no spin.
+ *
+ * ESCAPE HATCH: any key, click, touch or wheel skips to the end.
  */
-type Shot = {
-  slug: string;
-  id: string;
-  /** Opening clip geometry. Every shot ends at `inset(0 0 0 0)`. */
-  from: string;
-  /** Inner scale, start → rest. Kept under 1.14 so nothing softens. */
-  scale: [number, number];
-  /** Inner drift, start → rest. */
-  drift: [string, string];
-  at: number;
-  hold: number;
+type Placement = {
+  /** Left, top, width — % of the PAGE the print is on. */
+  at: readonly [number, number, number];
+  rotate: number;
+  cue: number;
 };
 
-const SHOTS: readonly Shot[] = [
-  /* PHASE 1 — DISCOVERY. A letterbox slit opens. Slow, curious. */
-  { slug: 'mr-yp-house', id: 'mr-yp-house-05', from: 'inset(47% 0% 47% 0%)', scale: [1.16, 1.02], drift: ['0%', '-2.2%'], at: 0.2, hold: 1.5 },
-  { slug: 'the-prasetyos', id: 'the-prasetyos-03', from: 'inset(0% 46% 0% 46%)', scale: [1.14, 1.02], drift: ['1.8%', '0%'], at: 1.25, hold: 1.35 },
-  /* PHASE 2 — BUILD. Wipes from alternating edges, tightening. */
-  { slug: 'waroeng-andalan', id: 'waroeng-andalan-01', from: 'inset(0% 0% 100% 0%)', scale: [1.12, 1.02], drift: ['0%', '1.8%'], at: 2.2, hold: 1.0 },
-  { slug: 'kintaro-cafe', id: 'kintaro-cafe-02', from: 'inset(0% 100% 0% 0%)', scale: [1.13, 1.02], drift: ['-2%', '0%'], at: 2.85, hold: 0.9 },
-  { slug: 'amadya', id: 'amadya-03', from: 'inset(100% 0% 0% 0%)', scale: [1.11, 1.02], drift: ['0%', '-1.6%'], at: 3.4, hold: 0.85 },
-  /* PHASE 3 — CLIMAX. Fast, confident, bigger moves. */
-  { slug: 'mrs-d-house', id: 'mrs-d-house-02', from: 'inset(0% 0% 0% 100%)', scale: [1.15, 1.02], drift: ['2.2%', '0%'], at: 3.95, hold: 0.72 },
-  { slug: 'atomic-cafe', id: 'atomic-cafe-01', from: 'inset(42% 42% 42% 42%)', scale: [1.18, 1.02], drift: ['0%', '0%'], at: 4.4, hold: 0.68 },
-  { slug: 'ms-ra-house', id: 'ms-ra-house-02', from: 'inset(0% 0% 100% 0%)', scale: [1.13, 1.02], drift: ['0%', '1.4%'], at: 4.8, hold: 0.9 },
-] as const;
+type AlbumPrint = { photo: Photograph; place: Placement; page: 'left' | 'right' };
+
+/** The spread: three prints on the first page, two on the inside of the
+ *  cover above the name. Heights follow each photograph's own ratio (a
+ *  3:2 print is 0.52w tall on a 3:4 page, a 16:9 one 0.44w). */
+function spreadPrints(): readonly AlbumPrint[] {
+  const f = framePhotograph;
+  return [
+    { page: 'right', photo: f('mr-yp-house-01'), place: { at: [13, 9, 74], rotate: -0.4, cue: 3.4 } },
+    { page: 'right', photo: f('waroeng-andalan-s01'), place: { at: [9, 59, 40], rotate: 1.1, cue: 3.75 } },
+    { page: 'right', photo: ARCHIVE.sanza24, place: { at: [51, 62, 41], rotate: -0.9, cue: 4.05 } },
+    { page: 'left', photo: ARCHIVE.th19, place: { at: [11, 9, 56], rotate: 0.7, cue: 4.35 } },
+    { page: 'left', photo: f('amadya-02'), place: { at: [55, 27, 31], rotate: -1.4, cue: 4.6 } },
+  ];
+}
+
+/** The page: a lead print across the top, two beneath it, the name at
+ *  the foot. Heights on a 0.68 page: 3:2 is 0.47w, 16:9 is 0.40w — so
+ *  the lower pair ends by 68% and the title block, from about 72%, has
+ *  the foot of the page to itself. */
+function pagePrints(): readonly AlbumPrint[] {
+  const f = framePhotograph;
+  return [
+    { page: 'right', photo: f('mr-yp-house-01'), place: { at: [8, 7, 84], rotate: -0.5, cue: 2.8 } },
+    { page: 'right', photo: ARCHIVE.sanza24, place: { at: [45, 50, 46], rotate: 1.2, cue: 3.15 } },
+    { page: 'right', photo: f('waroeng-andalan-s01'), place: { at: [8, 52.5, 34], rotate: -1.3, cue: 3.45 } },
+  ];
+}
+
+const OVERTURE = {
+  /** The longest a print waits for its image before landing anyway. */
+  patience: 1.2,
+  /** The album is set down (spread / page). */
+  end: 7.6,
+  endPage: 7.0,
+} as const;
+
+/** The name and its furniture, per composition. */
+const TITLE_CUES = {
+  spread: { letters: 4.95, rule: 5.5, lines: 5.7, folio: 5.9 },
+  page: { letters: 3.9, rule: 4.45, lines: 4.65, folio: 4.85 },
+} as const;
+
+/** The album's paper and cloth. A static SVG grain, blended multiply so
+ *  it darkens the fibres of the paper rather than greying it. */
+const PAPER_GRAIN =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.45 0 0 0 0 0.4 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E\")";
 
 /**
- * THE FOREGROUND PLATE — the depth layer.
- *
- * During the build and the climax a second, smaller frame rides over the
- * full-bleed shot, carrying a different project and moving on its own
- * clock. Two images at two rates in one composition is what gives the
- * sequence a midground and a foreground; without it every beat is one
- * flat plane and the montage reads as a slideshow no matter how the
- * cuts are timed.
+ * True once `at` seconds have passed since `start`. The sequence runs on
+ * timers against ONE start time, so cues cannot compound; each costs one
+ * timer and one render, never a render per frame.
  */
-const PLATES = [
-  { slug: 'kintaro-cafe', id: 'kintaro-cafe-03', box: 'left-[6vw] top-[14vh] w-[26vw] aspect-[4/5]', at: 2.35, hold: 1.5, y: ['5%', '-5%'] },
-  { slug: 'the-prasetyos', id: 'the-prasetyos-02', box: 'right-[7vw] bottom-[12vh] w-[30vw] aspect-[3/2]', at: 3.5, hold: 1.4, y: ['-4%', '4%'] },
-  { slug: 'waroeng-andalan', id: 'waroeng-andalan-03', box: 'left-[30vw] bottom-[16vh] w-[24vw] aspect-[3/2]', at: 4.5, hold: 1.15, y: ['6%', '-3%'] },
-] as const;
-
-/** The whole sequence. Act II is gated on the exit, not on this. */
-/* 7.5s. The title card finishes assembling at roughly 7.05 — the
-   locality line is the last thing in, at 5.95 over 1.1s — so this
-   leaves a genuine half-second of stillness on the finished
-   composition before the aperture opens. Cutting at 6.9 clipped the
-   payoff and the sequence ended on a move rather than on a held
-   frame. */
-const OVERTURE_MS = 7500;
-
-/** The title, per line. Split once at module scope. */
-const TITLE_LINES = [
-  { chars: 'LARK'.split('') },
-  { chars: 'STUDIO'.split('') },
-] as const;
-
-/** Which montage shots survive on a phone: a detail, a facade, an
- *  interior. Indices into `SHOTS`. */
-const MOBILE_SHOTS = new Set([0, 5, 7]);
-
-export function Preloader() {
-  const first = useFirstVisit();
-  const reduced = useReducedMotion();
-  const { phase, setPhase } = useIntro();
-  const [done, setDone] = useState(false);
-
-  const running = first && !done && reduced !== true;
-
-  useScrollLock(running);
-
+function useCue(start: number | null, at: number): boolean {
+  const [due, setDue] = useState(false);
   useEffect(() => {
-    if (running && phase === 'complete') setPhase('opening');
-  }, [running, phase, setPhase]);
-
-  useEffect(() => {
-    if (!running) return;
-    const finish = () => {
-      setPhase('transitioning');
-      setDone(true);
-    };
-    const timer = window.setTimeout(finish, OVERTURE_MS);
-    window.addEventListener('keydown', finish, { once: true });
-    window.addEventListener('pointerdown', finish, { once: true });
+    if (start === null) return;
+    const timer = window.setTimeout(
+      () => {
+        setDue(true);
+      },
+      Math.max(0, start + at * 1000 - performance.now()),
+    );
     return () => {
       window.clearTimeout(timer);
-      window.removeEventListener('keydown', finish);
-      window.removeEventListener('pointerdown', finish);
     };
-  }, [running, setPhase]);
+  }, [start, at]);
+  return due;
+}
+
+/** True once this layer's photograph is decoded — `decode()`, so a print
+ *  is never painted mid-decode on the frame it lands. */
+function useDecodedLayer(scope: RefObject<HTMLElement | null>): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let live = true;
+    const done = () => {
+      if (live) setReady(true);
+    };
+    const img = scope.current?.querySelector('img');
+    if (img) img.decode().then(done, done);
+    else done();
+    return () => {
+      live = false;
+    };
+  }, [scope]);
+  return ready;
+}
+
+/**
+ * A print laid onto the page with weight: it arrives a few pixels high,
+ * a degree further turned and a touch large, then settles — and its
+ * shadow comes up as it lands. Never a fade alone.
+ */
+function LaidPrint({
+  item,
+  start,
+  locale,
+  share,
+}: {
+  item: AlbumPrint;
+  start: number | null;
+  locale: Locale;
+  /** The page's width as a share of the viewport, for `sizes`. */
+  share: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const decoded = useDecodedLayer(ref);
+  const cue = useCue(start, item.place.cue);
+  const late = useCue(start, item.place.cue + OVERTURE.patience);
+  const play = cue && (decoded || late);
+  const [x, y, w] = item.place.at;
+  const turn = item.place.rotate < 0 ? -1.6 : 1.6;
+  const from = { opacity: 0, y: -14, rotate: turn, scale: 1.03 };
 
   return (
+    <Motion.div
+      ref={ref}
+      className="absolute"
+      style={{ left: `${String(x)}%`, top: `${String(y)}%`, width: `${String(w)}%` }}
+      initial={from}
+      animate={play ? { opacity: 1, y: 0, rotate: 0, scale: 1 } : from}
+      transition={{
+        opacity: { duration: 0.45, ease: EASE.expo },
+        default: { duration: 1.05, ease: EASE.expo },
+      }}
+    >
+      <Print
+        photo={item.photo}
+        locale={locale}
+        sizes={`${String(Math.ceil((w / 100) * share))}vw`}
+        eager
+        rotate={item.place.rotate}
+      />
+    </Motion.div>
+  );
+}
+
+/** Warm album paper: tone, grain, and the fall-off into the gutter. */
+function Paper({ gutter }: { gutter: 'left' | 'right' | 'none' }) {
+  return (
+    <>
+      <div className="absolute inset-0 bg-album" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-40 mix-blend-multiply"
+        style={{ backgroundImage: PAPER_GRAIN }}
+      />
+      {/* Light from the upper left, falling off across the page. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(120%_90%_at_18%_10%,rgba(255,252,245,0.35),rgba(255,252,245,0)_55%,rgba(40,34,26,0.10))]"
+      />
+      {gutter !== 'none' && (
+        <div
+          aria-hidden="true"
+          className={`absolute inset-y-0 w-[9%] ${
+            gutter === 'left'
+              ? 'left-0 bg-[linear-gradient(to_right,rgba(30,26,20,0.30),rgba(30,26,20,0.08)_40%,rgba(30,26,20,0))]'
+              : 'right-0 bg-[linear-gradient(to_left,rgba(30,26,20,0.30),rgba(30,26,20,0.08)_40%,rgba(30,26,20,0))]'
+          }`}
+        />
+      )}
+    </>
+  );
+}
+
+/** Page thickness: the edges of the leaves beneath, stepped out at the
+ *  fore-edge and the foot. Three hairlines of warm grey — no more. */
+function PageBlock({ side }: { side: 'left' | 'right' }) {
+  return (
+    <>
+      {[3, 2, 1].map((n) => (
+        <div
+          key={n}
+          aria-hidden="true"
+          className="absolute inset-0 bg-album-edge"
+          style={{
+            transform: `translate(${String(side === 'right' ? n * 1.5 : -n * 1.5)}px, ${String(n * 1.5)}px)`,
+            filter: `brightness(${String(1 - n * 0.07)})`,
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
+/** The outside of the cover: charcoal cloth, a blind-embossed frame, the
+ *  monogram and the name stamped in brass. */
+function CoverFront({ spread }: { spread: boolean }) {
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-cloth">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-50 mix-blend-soft-light"
+        style={{ backgroundImage: PAPER_GRAIN }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(110%_80%_at_22%_12%,rgba(255,244,225,0.07),rgba(0,0,0,0)_55%,rgba(0,0,0,0.25))]"
+      />
+      {/* The spine hinge: a soft crease a few percent in from the edge. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-y-0 left-[4%] w-[2.5%] bg-[linear-gradient(to_right,rgba(0,0,0,0.35),rgba(255,255,255,0.04),rgba(0,0,0,0.18))]"
+      />
+      {/* Blind emboss: a frame pressed into the board — a dark line with a
+          light one a pixel below it. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-[7%] left-[11%] border border-black/40 shadow-[0_1px_0_rgba(255,244,225,0.06)]"
+      />
+      <div className="absolute inset-x-[11%] top-[36%] flex flex-col items-center">
+        <Image
+          src="/logo.png"
+          alt=""
+          width={200}
+          height={200}
+          unoptimized
+          className={`object-contain opacity-80 ${spread ? 'h-[5.5cqw] w-[5.5cqw]' : 'h-[11cqw] w-[11cqw]'}`}
+        />
+      </div>
+      <p
+        className={`absolute inset-x-[11%] bottom-[14%] text-center font-display font-medium uppercase tracking-[0.3em] text-brass [text-shadow:0_1px_0_rgba(0,0,0,0.5)] ${
+          spread ? 'text-[1.5cqw]' : 'text-[4cqw]'
+        }`}
+      >
+        Lark Studio
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The name, set on the title page like a book's half-title: left-aligned
+ * on the page's margin, a rule, the disciplines, the place. The letters
+ * come up in reading order, a few at a time — type being set, not a
+ * logo sting.
+ */
+function TitlePage({ spread, locale }: { spread: boolean; locale: Locale }) {
+  const cue = spread ? TITLE_CUES.spread : TITLE_CUES.page;
+  const letters = 'LARK STUDIO'.split('');
+  return (
+    <div className={`absolute left-[11%] ${spread ? 'bottom-[11%] right-[11%]' : 'bottom-[7%] right-[8%]'}`}>
+      <p
+        className={`whitespace-nowrap font-display font-medium leading-[0.95] tracking-[0.04em] text-album-ink ${
+          spread ? 'text-[5.4cqw]' : 'text-[11cqw]'
+        }`}
+      >
+        {letters.map((c, i) => (
+          <Motion.span
+            key={i}
+            className="inline-block"
+            initial={{ opacity: 0, y: '0.35em' }}
+            animate={{ opacity: 1, y: '0em' }}
+            transition={{ duration: 1.1, ease: EASE.expo, delay: cue.letters + i * 0.055 }}
+          >
+            {c === ' ' ? ' ' : c}
+          </Motion.span>
+        ))}
+      </p>
+      <Motion.span
+        aria-hidden="true"
+        className={`block h-px origin-left bg-album-ink/40 ${spread ? 'mt-[1.6cqw] w-[46%]' : 'mt-[4cqw] w-[40%]'}`}
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 1.2, ease: EASE.quart, delay: cue.rule }}
+      />
+      <Motion.div
+        /* Line height as a ratio, not the body's fixed 1.75rem: every
+           size on the title page scales with the album, so a small phone
+           gets a small title block rather than one pushed up the page. */
+        className={`font-text uppercase leading-[1.5] tracking-[0.2em] text-album-ink-2 ${
+          spread ? 'mt-[1.4cqw] space-y-[0.5cqw] text-[0.95cqw]' : 'mt-[3.4cqw] space-y-[1.2cqw] text-[2.6cqw]'
+        }`}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, ease: EASE.expo, delay: cue.lines }}
+      >
+        <p>{locale === 'id' ? 'Arsitektur · Interior · Lanskap' : 'Architecture · Interiors · Landscape'}</p>
+        <p className="figures">
+          {site.address[1].split(' ')[0]} — <Figures>{site.founded}</Figures>
+        </p>
+      </Motion.div>
+    </div>
+  );
+}
+
+/** A folio or caption in the album's small type. */
+function Small({
+  className,
+  cue,
+  children,
+}: {
+  className: string;
+  cue: number;
+  children: ReactNode;
+}) {
+  return (
+    <Motion.p
+      className={`absolute font-text uppercase leading-[1.5] tracking-[0.18em] text-album-ink-2 ${className}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.9, ease: EASE.expo, delay: cue }}
+    >
+      {children}
+    </Motion.p>
+  );
+}
+
+function Overture({ onFinish }: { onFinish: () => void }) {
+  const finish = useRef(onFinish);
+  finish.current = onFinish;
+  const [locale, setLocale] = useState<Locale>('en');
+
+  /** Performance-clock time the sequence started, once it has. */
+  const [start, setStart] = useState<number | null>(null);
+  /** Spread (landscape) or page (portrait) — chosen ONCE, at the start. */
+  const [spread, setSpread] = useState(true);
+
+  useEffect(() => {
+    if (document.documentElement.getAttribute('data-intro') !== 'play') return;
+    window.scrollTo(0, 0);
+    setLocale(document.documentElement.lang === 'id' ? 'id' : 'en');
+    setSpread(window.innerWidth >= 640 && window.innerWidth / window.innerHeight >= 1);
+    setStart(performance.now());
+  }, []);
+
+  /* END: on the clock, or the moment the visitor asks to be let in. */
+  useEffect(() => {
+    if (document.documentElement.getAttribute('data-intro') !== 'play') return;
+    const skip = () => {
+      finish.current();
+    };
+    window.addEventListener('keydown', skip, { once: true });
+    window.addEventListener('pointerdown', skip, { once: true });
+    window.addEventListener('wheel', skip, { once: true, passive: true });
+    return () => {
+      window.removeEventListener('keydown', skip);
+      window.removeEventListener('pointerdown', skip);
+      window.removeEventListener('wheel', skip);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (start === null) return;
+    const timer = window.setTimeout(
+      () => {
+        finish.current();
+      },
+      Math.max(0, start + (spread ? OVERTURE.end : OVERTURE.endPage) * 1000 - performance.now()),
+    );
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [start, spread]);
+
+  const prints = start === null ? [] : spread ? spreadPrints() : pagePrints();
+  /* One page's width as a share of the viewport, for image `sizes`. */
+  const share = spread ? 44 : 86;
+  const hinge = { duration: spread ? 1.8 : 1.6, ease: EASE.page, delay: spread ? 1.5 : 1.35 };
+  const tone = spread ? TITLE_CUES.spread : TITLE_CUES.page;
+
+  return (
+    <Motion.div
+      data-overture=""
+      aria-hidden="true"
+      className="no-print fixed inset-0 z-90 overflow-hidden bg-paper"
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.9, ease: EASE.quart }}
+    >
+      {/* THE TABLE: the site's near-black, with one soft pool of light from
+          the upper left for the album to sit in. */}
+      <Motion.div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(70%_60%_at_42%_40%,rgba(64,56,44,0.55),rgba(11,11,12,0)_70%)]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.6, ease: EASE.expo }}
+      />
+
+      {start !== null && (
+        <div className="absolute inset-0 flex items-center justify-center px-[max(1rem,env(safe-area-inset-left))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
+          {/*
+            THE ALBUM — one box everything is placed in, and the size
+            container its type is set in.
+
+              spread  3:2 open (two 3:4 boards), up to 80vw, as tall as the
+                      small viewport less 10rem allows, capped at 1400px —
+                      enough table left around it to read as an object
+              page    0.68:1, up to 84vw, as tall as the small viewport
+                      less 5rem allows, capped at 620px
+
+            Closed, the spread's cover sits over the RIGHT page, so the
+            album starts shifted a quarter left — centred as a closed book
+            — and slides to centre as it opens.
+          */}
+          <Motion.div
+            className={`relative [container-type:inline-size] ${
+              spread
+                ? 'aspect-[3/2] w-[min(80vw,calc((100svh-10rem)*1.5),1400px)]'
+                : 'aspect-[0.68] w-[min(84vw,calc((100svh-5rem)*0.68),620px)]'
+            }`}
+            style={{ perspective: 2600 }}
+            initial={{ opacity: 0, y: 26, x: spread ? '-25%' : '0%' }}
+            animate={{ opacity: 1, y: 0, x: '0%' }}
+            exit={{ scale: 0.97, opacity: 0 }}
+            transition={{
+              opacity: { duration: 1.0, ease: EASE.expo, delay: 0.2 },
+              y: { duration: 1.2, ease: EASE.expo, delay: 0.2 },
+              x: hinge,
+              default: { duration: 0.9, ease: EASE.quart },
+            }}
+          >
+            {/* The album's shadow on the table — static, soft, beneath
+                the half that is always there. */}
+            <div
+              aria-hidden="true"
+              className={`absolute inset-y-0 right-0 shadow-[0_40px_70px_-30px_rgba(0,0,0,0.9),0_8px_20px_-8px_rgba(0,0,0,0.6)] ${
+                spread ? 'w-1/2' : 'w-full'
+              }`}
+            />
+
+            {/* THE BACK BOARD, and on it the first page. A hardcover's
+                boards are a little larger than its leaves, so a rim of
+                cloth frames the paper at head, foot and fore-edge — the
+                detail that makes it a bound book rather than a printout. */}
+            <div className={`absolute inset-y-0 right-0 ${spread ? 'w-1/2' : 'w-full'}`}>
+              <div aria-hidden="true" className="absolute inset-0 bg-cloth" />
+              <div className="absolute inset-y-[1.8%] left-0 right-[2.4%]">
+              <PageBlock side="right" />
+              <div className="absolute inset-0 overflow-hidden">
+                <Paper gutter={spread ? 'left' : 'none'} />
+                {prints
+                  .filter((item) => item.page === 'right')
+                  .map((item) => (
+                    <LaidPrint key={item.photo.src} item={item} start={start} locale={locale} share={share} />
+                  ))}
+                {spread ? (
+                  <>
+                    <Small className="left-[13%] top-[48.5%] text-[0.62cqw]" cue={tone.folio}>
+                      Mr. YP House — Tangerang
+                    </Small>
+                    <Small className="bottom-[4.5%] right-[9%] text-[0.62cqw]" cue={tone.folio}>
+                      02
+                    </Small>
+                  </>
+                ) : (
+                  <>
+                    <Small className="left-[8%] top-[47.5%] text-[1.8cqw]" cue={tone.folio}>
+                      Mr. YP House — Tangerang
+                    </Small>
+                    <TitlePage spread={false} locale={locale} />
+                  </>
+                )}
+              </div>
+              {/* The shadow the closed cover casts across the first page,
+                  lifting away as the board rises. */}
+              <Motion.div
+                aria-hidden="true"
+                className="absolute inset-0 bg-[linear-gradient(to_right,rgba(20,16,12,0.55),rgba(20,16,12,0.15)_45%,rgba(20,16,12,0))]"
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 0 }}
+                transition={{ ...hinge, duration: hinge.duration * 0.75 }}
+              />
+              </div>
+            </div>
+
+            {/*
+              THE COVER — one board, two faces, one hinge. It turns about
+              its spine edge; on the spread its inside lands as the left
+              page, on a phone it swings open past the viewer and away.
+            */}
+            <Motion.div
+              className={`absolute inset-y-0 right-0 origin-left [transform-style:preserve-3d] ${
+                spread ? 'w-1/2' : 'w-full'
+              }`}
+              initial={{ rotateY: 0 }}
+              /* On a phone there is no inside face: once the board is past
+                 edge-on its outside is turned away (`backface-visibility`)
+                 and it is simply gone — as a real cover leaves the frame
+                 when you open a book held close. */
+              animate={{ rotateY: -180 }}
+              transition={hinge}
+            >
+              {/* Outside. It falls into shadow as it turns away from the
+                  light. */}
+              <div className="absolute inset-0 [backface-visibility:hidden]">
+                <PageBlock side="right" />
+                <CoverFront spread={spread} />
+                <Motion.div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-black"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.6 }}
+                  transition={{ ...hinge, duration: hinge.duration / 2, ease: EASE.quart }}
+                />
+              </div>
+
+              {/* Inside — the spread's left page, including its prints and
+                  the name. It comes up out of shadow as it lands. */}
+              {spread && (
+                <div className="absolute inset-0 overflow-hidden bg-cloth [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                  {/* The inside of the board: cloth turned over at the
+                      edges, the endpaper pasted down within them. */}
+                  <div className="absolute inset-y-[1.8%] left-[2.4%] right-0 overflow-hidden">
+                  <Paper gutter="right" />
+                  {prints
+                    .filter((item) => item.page === 'left')
+                    .map((item) => (
+                      <LaidPrint key={item.photo.src} item={item} start={start} locale={locale} share={share} />
+                    ))}
+                  <TitlePage spread locale={locale} />
+                  <Small className="bottom-[4.5%] left-[11%] text-[0.62cqw]" cue={tone.folio}>
+                    01
+                  </Small>
+                  </div>
+                  <Motion.div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-black"
+                    initial={{ opacity: 0.55 }}
+                    animate={{ opacity: 0 }}
+                    transition={{ ...hinge, delay: hinge.delay + hinge.duration / 2, duration: hinge.duration / 2, ease: EASE.quart }}
+                  />
+                </div>
+              )}
+            </Motion.div>
+          </Motion.div>
+        </div>
+      )}
+    </Motion.div>
+  );
+}
+
+/**
+ * The overture's mount point. Renders the overlay while the intro is
+ * `opening`; when the sequence finishes, the exit plays and Act II is
+ * released by that exit's own completion callback — no second clock, so
+ * nothing can overlap.
+ */
+export function Preloader() {
+  const { phase, setPhase } = useIntro();
+  return (
     <AnimatePresence
-      /* Act II is released by the exit's own completion callback, not by
-         a timer running beside it. No second clock, so no overlap. */
       onExitComplete={() => {
         setPhase('complete');
       }}
     >
-      {running && (
-        <Motion.div
-          aria-hidden="true"
-          className="no-print fixed inset-x-0 top-0 z-90 h-[100svh] overflow-hidden bg-paper"
-          exit={{ clipPath: 'inset(50% 0% 50% 0%)', opacity: 0 }}
-          transition={{ duration: 1.05, ease: EASE.quart }}
-          style={{ clipPath: 'inset(0% 0% 0% 0%)' }}
-        >
-          {/*
-            THE CAMERA.
-
-            Every shot lives inside this one layer, and this layer never
-            stops moving for the whole sequence: it pushes from 1.06 to
-            1.0 while drifting left and lifting. That is the single most
-            important change from the previous revision. Before, each
-            shot animated in isolation and the frame itself was static,
-            so the eye read "picture, pause, picture, pause". With a
-            continuous camera under them the cuts happen INSIDE a move,
-            which is what a title sequence actually feels like.
-          */}
-          <Motion.div
-            className="absolute inset-0"
-            initial={{ scale: 1.06, x: '1.5%', y: '1%' }}
-            animate={{ scale: 1.0, x: '-1.5%', y: '-1%' }}
-            transition={{ duration: 6.4, ease: 'linear' }}
-          >
-            {/*
-              THE MONTAGE — full bleed, so the architecture IS the colour.
-
-              SHOTS DO NOT FADE OUT. Each one opens its clip and then
-              STAYS, and the next shot's clip opens over the top of it.
-              The previous revision closed every clip and dropped opacity
-              back to 0, which put a beat of black between every pair —
-              the exact "one thing at a time" rhythm that reads as a
-              slide deck. Now the screen is never empty after 0.5s and
-              each cut is a genuine transition rather than an appearance.
-            */}
-            {SHOTS.map((shot, i) => (
-              <Motion.div
-                key={shot.id}
-                /* MOBILE GETS A CURATED CUT, NOT A COMPRESSED ONE. Below
-                   640px only shots 1, 4 and 7 play — a detail, a facade
-                   and an interior — so the sequence keeps its arc with
-                   three clear beats instead of eight fighting for a
-                   narrow screen. It also drops five full-bleed decodes
-                   on exactly the devices least able to afford them. */
-                className={`absolute inset-0 ${MOBILE_SHOTS.has(i) ? '' : 'hidden tablet:block'}`}
-                style={{ zIndex: i + 1 }}
-                initial={{ clipPath: shot.from, opacity: 0 }}
-                animate={{ clipPath: 'inset(0% 0% 0% 0%)', opacity: 1 }}
-                transition={{
-                  clipPath: { duration: shot.hold, ease: EASE.quart, delay: shot.at },
-                  opacity: { duration: 0.01, delay: shot.at },
-                }}
-              >
-                {/* The plate travels inside its own frame — frame and
-                    contents at different rates is the parallax. */}
-                <Motion.div
-                  className="absolute inset-0"
-                  initial={{ scale: shot.scale[0], y: shot.drift[0] }}
-                  animate={{ scale: shot.scale[1], y: shot.drift[1] }}
-                  transition={{ duration: shot.hold + 2.2, ease: EASE.expo, delay: shot.at }}
-                >
-                  <Fill
-                    src={crop(shot.slug, shot.id, 'landscape')}
-                    alt=""
-                    sizes="100vw"
-                    priority={i < 2}
-                    eager={i < 5}
-                  />
-                </Motion.div>
-                {/* Exposure lifts as the cut lands, so consecutive shots
-                    differ in light as well as in geometry. */}
-                <Motion.div
-                  className="absolute inset-0 bg-paper"
-                  initial={{ opacity: 0.7 }}
-                  animate={{ opacity: 0.06 }}
-                  transition={{ duration: shot.hold * 0.9, ease: EASE.quart, delay: shot.at }}
-                />
-              </Motion.div>
-            ))}
-
-            {/* THE FOREGROUND PLATES — the depth layer. */}
-            {PLATES.map((plate, i) => (
-              <Motion.div
-                key={plate.id}
-                className={`absolute hidden overflow-hidden tablet:block ${plate.box}`}
-                style={{ zIndex: 40 + i }}
-                initial={{ clipPath: 'inset(0% 0% 100% 0%)', opacity: 0 }}
-                animate={{
-                  clipPath: [
-                    'inset(0% 0% 100% 0%)',
-                    'inset(0% 0% 0% 0%)',
-                    'inset(0% 0% 0% 0%)',
-                    'inset(100% 0% 0% 0%)',
-                  ],
-                  opacity: [0, 1, 1, 0],
-                }}
-                transition={{
-                  duration: plate.hold + 0.9,
-                  times: [0, 0.3, 0.7, 1],
-                  ease: EASE.quart,
-                  delay: plate.at,
-                }}
-              >
-                <Motion.div
-                  className="absolute inset-0"
-                  initial={{ y: plate.y[0], scale: 1.08 }}
-                  animate={{ y: plate.y[1], scale: 1 }}
-                  transition={{ duration: plate.hold + 1.6, ease: EASE.expo, delay: plate.at }}
-                >
-                  <Fill src={crop(plate.slug, plate.id, 'landscape')} alt="" sizes="32vw" eager />
-                </Motion.div>
-              </Motion.div>
-            ))}
-
-            {/*
-              THE COLOUR PROGRESSION.
-
-              A warm grade that is absent through Discovery, arrives with
-              the Build and deepens into the Climax, drawn from the brass
-              accent that is already the studio's one chromatic token. It
-              is multiplied over the architecture rather than added, so it
-              warms the timber and the daylight already in the renders
-              instead of tinting them.
-            */}
-            <Motion.div
-              aria-hidden="true"
-              className="absolute inset-0 z-50 mix-blend-overlay bg-[radial-gradient(130%_100%_at_25%_35%,rgba(200,160,106,0.55),rgba(200,160,106,0)_60%)]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0, 0.5, 0.85, 0.35] }}
-              transition={{ duration: 5.6, times: [0, 0.34, 0.6, 0.84, 1], ease: 'linear' }}
-            />
-            {/* A permanent vignette so the full-bleed shots read as
-                framed cinematography rather than as wallpaper. */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 z-50 bg-[radial-gradient(120%_85%_at_50%_50%,transparent_45%,rgba(11,11,12,0.72))]"
-            />
-          </Motion.div>
-
-          {/* THE DATUM. Drawn once at the start, and it is the line the
-              wordmark later sits on — the only element that survives the
-              whole sequence. */}
-          <Motion.span
-            className="absolute left-5 right-5 top-1/2 z-10 h-px origin-center bg-line-strong tablet:left-7 tablet:right-7"
-            initial={{ scaleX: 0, opacity: 0 }}
-            animate={{ scaleX: 1, opacity: [0, 0.8, 0.25, 0] }}
-            transition={{ duration: 5.4, times: [0, 0.12, 0.6, 1], ease: EASE.quart, delay: 0.1 }}
-          />
-
-          {/* THE CONVERGENCE. A paper field closes over the last shot so
-              the montage resolves rather than simply stopping. */}
-          <Motion.div
-            className="absolute inset-0 z-10 bg-[radial-gradient(120%_90%_at_20%_60%,rgba(200,160,106,0.16),rgba(11,11,12,1)_62%)]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.9, ease: EASE.quart, delay: 4.95 }}
-          />
-
-          {/*
-            PHASE 4 — THE TITLE, RE-COMPOSED.
-
-            WHAT WAS WRONG. The wordmark was set left-aligned on the
-            datum, at `text-hero`, with each letter sliding in from above
-            or below. Three things made that read as a slide deck rather
-            than as a title card: it sat hard against the left margin so
-            the eye had nowhere to settle; the letters TRAVELLED, which
-            is the most literal move available and the one every
-            presentation template uses; and it arrived at the same weight
-            and size as the hero headline that follows it, so the brand
-            never got a moment of its own.
-
-            WHAT IT DOES NOW. The composition is CENTRED — the montage
-            has just converged to a calm field, and the wordmark resolves
-            out of the middle of it, which is where the eye already is.
-            The letters do not travel. They RESOLVE: each one fades up
-            from zero while the whole line contracts from wide tracking,
-            so the word assembles from spaced-out ghosts into a set line.
-            The stagger runs from the CENTRE outward rather than left to
-            right, so it reads as the name coming into focus rather than
-            as text being written.
-
-            The scale move is 1.06 to 1 across the full reveal — slow
-            enough to be felt rather than seen, and the only thing on the
-            page still moving during the final beat.
-          */}
-          <div className="absolute inset-x-0 top-1/2 z-20 -translate-y-1/2 px-[max(1.5rem,env(safe-area-inset-left))] tablet:px-7">
-            <Motion.div
-              className="flex flex-col items-center text-center"
-              initial={{ scale: 1.06 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 2.6, ease: EASE.expo, delay: 4.9 }}
-            >
-              <Motion.span
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.1, ease: EASE.expo, delay: 4.95 }}
-              >
-                <Image
-                  src="/logo.png"
-                  alt=""
-                  width={200}
-                  height={200}
-                  unoptimized
-                  priority
-                  className="h-8 w-8 object-contain tablet:h-9 tablet:w-9"
-                />
-              </Motion.span>
-
-              {/*
-                The tracking closes on the LINE while the letters fade up
-                individually. Two properties, two owners, so neither
-                fights the other — and no letter ever changes position
-                relative to its neighbours, which is what keeps it from
-                looking mechanical.
-              */}
-              <Motion.h1
-                className="mt-6 block font-display text-hero font-medium leading-none text-ink tablet:mt-7"
-                initial={{ letterSpacing: 'var(--overture-track)' }}
-                animate={{ letterSpacing: '-0.015em' }}
-                transition={{ duration: 2.4, ease: EASE.expo, delay: 5.05 }}
-              >
-                {TITLE_LINES.map((line, li) => (
-                  <span key={li} className="block tablet:inline-block">
-                    {line.chars.map((c, i) => (
-                      <Motion.span
-                        key={`${String(li)}-${String(i)}`}
-                        className="inline-block will-change-[opacity]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{
-                          duration: 1.15,
-                          ease: EASE.expo,
-                          /* Centre-out: the middle letters resolve first
-                             and the sequence spreads to both edges. */
-                          delay: 5.1 + Math.abs(i - (line.chars.length - 1) / 2) * 0.075,
-                        }}
-                      >
-                        {c}
-                      </Motion.span>
-                    ))}
-                    {li === 0 && <span className="hidden tablet:inline">&nbsp;</span>}
-                  </span>
-                ))}
-              </Motion.h1>
-
-              {/* A hairline drawn under the name, from the centre out —
-                  the one element that says "this is the title card". */}
-              <Motion.span
-                aria-hidden="true"
-                className="mt-7 block h-px w-[min(22rem,60vw)] origin-center bg-line-strong"
-                initial={{ scaleX: 0, opacity: 0 }}
-                animate={{ scaleX: 1, opacity: 1 }}
-                transition={{ duration: 1.5, ease: EASE.quart, delay: 5.7 }}
-              />
-
-              <Motion.p
-                className="label mt-5 text-ink-3"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 1.1, ease: EASE.expo, delay: 5.95 }}
-              >
-                {site.address[1]} — <Figures>{site.founded}</Figures>
-              </Motion.p>
-            </Motion.div>
-          </div>
-        </Motion.div>
+      {phase === 'opening' && (
+        <Overture
+          key="overture"
+          onFinish={() => {
+            setPhase('transitioning');
+          }}
+        />
       )}
     </AnimatePresence>
+  );
+}
+
+/* ================================================================== *
+ * THE ANNOUNCEMENT — New Directions
+ * ================================================================== */
+
+/**
+ * THE STUDIO'S NEXT CHAPTER, told as a two-page insert: Larkscapes.id,
+ * then Larkworks.id. One component, one store, two ways in:
+ *
+ *   AUTOMATICALLY, once a browsing session, TWO SECONDS AFTER THE INTRO
+ *   HAS FULLY LEFT. The clock starts on the intro phase reaching
+ *   `complete` — which only happens in the overture's own exit callback —
+ *   never on page load, so it cannot land over the overture on a slow
+ *   device. Where there is no overture (a repeat view, a deep link,
+ *   reduced motion) `complete` is reached at hydration and the same two
+ *   seconds apply. If another dialog or the menu is open at that moment,
+ *   it waits until it is not.
+ *
+ *   BY HAND, from the header's "New" entry, at any time. Closing never
+ *   hides the announcement for good: the session flag only stops it
+ *   opening BY ITSELF again.
+ *
+ * It is a sheet of the album's paper rather than a dark modal — the same
+ * stock the overture opened on, so the news reads as another page of the
+ * studio's book, not as an interruption bolted onto the site. Every
+ * photograph is a whole print.
+ *
+ * A proper dialog: `aria-modal`, labelled by the initiative's name, focus
+ * moved in on open, trapped while open and returned on close; Escape
+ * closes, arrow keys turn, a sideways swipe turns, the page underneath is
+ * held exactly where it was.
+ */
+const ANNOUNCE_DELAY = 2000;
+const ANNOUNCE_SEEN = 'lark-announcement';
+
+let announcementOpen = false;
+const announcementListeners = new Set<() => void>();
+
+function setAnnouncement(open: boolean): void {
+  if (announcementOpen === open) return;
+  announcementOpen = open;
+  for (const listener of announcementListeners) listener();
+}
+
+/** Opens the announcement — the header entry and the auto-open both. */
+export function openAnnouncement(): void {
+  setAnnouncement(true);
+}
+
+function useAnnouncementOpen(): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      announcementListeners.add(listener);
+      return () => announcementListeners.delete(listener);
+    },
+    () => announcementOpen,
+    () => false,
+  );
+}
+
+export function Announcement({ locale }: { locale: Locale }) {
+  const open = useAnnouncementOpen();
+  const { phase } = useIntro();
+
+  useEffect(() => {
+    if (phase !== 'complete') return;
+    let seen = true;
+    try {
+      seen = window.sessionStorage.getItem(ANNOUNCE_SEEN) === '1';
+    } catch {
+      /* Storage blocked: never auto-open rather than open every page. */
+    }
+    if (seen) return;
+    let timer = 0;
+    const attempt = () => {
+      const busy =
+        document.querySelector('[role="dialog"]') !== null ||
+        document.querySelector('[aria-controls="site-menu"][aria-expanded="true"]') !== null;
+      if (busy) {
+        timer = window.setTimeout(attempt, 1500);
+        return;
+      }
+      try {
+        window.sessionStorage.setItem(ANNOUNCE_SEEN, '1');
+      } catch {
+        /* nothing to remember it in */
+      }
+      setAnnouncement(true);
+    };
+    timer = window.setTimeout(attempt, ANNOUNCE_DELAY);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [phase]);
+
+  return (
+    <AnimatePresence>
+      {open && <AnnouncementDialog key="announcement" locale={locale} />}
+    </AnimatePresence>
+  );
+}
+
+type Initiative = (typeof directions.initiatives)[number];
+
+/** Two prints on the page: the lead fitted into the upper-left of the
+ *  stage, the second into the lower-right, overlapping it. Each is sized
+ *  to its own box by its own ratio — portraits and landscapes alike are
+ *  shown whole. */
+function AnnouncementPrints({ item, locale }: { item: Initiative; locale: Locale }) {
+  const [lead, second] = item.announce;
+  const fit = (photo: Photograph) => ({
+    width: `min(100cqw, calc(100cqh * ${String(printAspect(photo))}), ${String(photo.width)}px)`,
+  });
+  return (
+    <>
+      <div className="absolute left-0 top-0 flex h-[88%] w-[80%] items-start justify-start [container-type:size]">
+        <div style={fit(lead)}>
+          <Print photo={lead} locale={locale} sizes="(min-width: 1024px) 40vw, 80vw" eager rotate={-0.8} />
+        </div>
+      </div>
+      <div className="absolute bottom-0 right-0 z-10 flex h-[52%] w-[46%] items-end justify-end [container-type:size]">
+        <div style={fit(second)}>
+          <Print photo={second} locale={locale} sizes="(min-width: 1024px) 24vw, 46vw" eager rotate={1.4} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** One story: prints, then field, name, body and the way in. `live`
+ *  is false for the invisible copies that size the sheet. */
+function AnnouncementPage({
+  item,
+  locale,
+  live,
+  onClose,
+  onMore,
+}: {
+  item: Initiative;
+  locale: Locale;
+  live: boolean;
+  onClose: () => void;
+  onMore: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-6 tablet:gap-5 desktop:grid-cols-12 desktop:items-center desktop:gap-x-8">
+      <div className="relative h-[min(26svh,14rem)] short:h-[22svh] tablet:h-[min(30svh,20rem)] desktop:col-span-7 desktop:h-[min(50svh,27rem)] [@media(min-width:1024px)_and_(max-height:800px)]:h-[44svh]">
+        {live && <AnnouncementPrints item={item} locale={locale} />}
+      </div>
+      <div className="desktop:col-span-5">
+        <p className="flex items-center gap-2 font-text text-label uppercase tracking-[0.18em] text-album-ink-2">
+          <span aria-hidden="true" className="h-[6px] w-[6px] rounded-full bg-brass" />
+          {item.field[locale]}
+        </p>
+        <h2
+          {...(live && { id: 'announcement-title' })}
+          className="mt-2 font-display text-[clamp(2rem,1.3rem+3vw,3.75rem)] font-medium leading-[1.02] text-album-ink tablet:mt-3"
+        >
+          {item.name}
+        </h2>
+        <p
+          {...(live && { id: 'announcement-body' })}
+          className="mt-3 max-w-[40ch] font-text text-spec text-album-ink-2 short:text-caption tablet:mt-4 tablet:text-body"
+        >
+          {item.body[locale]}
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-0 tablet:mt-6 tablet:gap-y-3">
+          <Link
+            href={paths.contact(locale)}
+            onClick={onClose}
+            tabIndex={live ? 0 : -1}
+            className="group inline-flex min-h-[44px] items-center gap-3 border-b border-album-ink/40 font-text text-spec text-album-ink transition-colors duration-300 ease-expo hover:border-album-ink"
+          >
+            {item.action[locale]}
+            <Arrow className="transition-transform duration-500 ease-expo group-hover:translate-x-1" />
+          </Link>
+          <button
+            type="button"
+            onClick={onMore}
+            tabIndex={live ? 0 : -1}
+            className="inline-flex min-h-[44px] items-center font-text text-spec text-album-ink-2 underline decoration-album-ink/25 underline-offset-4 transition-colors duration-300 ease-expo hover:text-album-ink"
+          >
+            {directions.more[locale]}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnnouncementDialog({ locale }: { locale: Locale }) {
+  const pages = directions.initiatives;
+  const count = pages.length;
+  const [[index, direction], setState] = useState<[number, number]>([0, 0]);
+  const container = useRef<HTMLDivElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const router = useRouter();
+
+  useScrollHold(true);
+  useFocusTrap(container, true);
+
+  const close = useCallback(() => {
+    setAnnouncement(false);
+  }, []);
+  const go = useCallback(
+    (delta: number) => {
+      setState(([current]) => [(current + delta + count) % count, delta]);
+    },
+    [count],
+  );
+
+  /* "More on the homepage": the New Directions section, scrolled to if it
+     is on this page, navigated to if it is not. */
+  const more = useCallback(() => {
+    setAnnouncement(false);
+    if (document.getElementById('directions')) {
+      window.setTimeout(() => {
+        scrollToId('directions');
+      }, 450);
+    } else {
+      router.push(`${paths.home(locale)}#directions`);
+    }
+  }, [locale, router]);
+
+  useEffect(() => {
+    closeButton.current?.focus({ preventScroll: true });
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close();
+      else if (event.key === 'ArrowRight') go(1);
+      else if (event.key === 'ArrowLeft') go(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [close, go]);
+
+  const item = pages[index] ?? pages[0];
+  const small =
+    'flex h-[40px] w-[40px] items-center justify-center text-album-ink-2 transition-colors duration-300 ease-expo hover:text-album-ink';
+
+  return (
+    <div
+      ref={container}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="announcement-title"
+      aria-describedby="announcement-body"
+      className="fixed inset-0 z-[96] flex items-center justify-center px-[max(0.75rem,env(safe-area-inset-left))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]"
+    >
+      {/* The page beneath, dimmed. A click on it closes. */}
+      <Motion.div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[rgba(8,8,9,0.78)]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5, ease: EASE.expo }}
+        onClick={close}
+      />
+
+      {/* THE SHEET. Album paper, grain, the light from the upper left —
+          scrolls inside itself only if a very short screen demands it. */}
+      <Motion.div
+        className="relative max-h-full w-full max-w-[1120px] overflow-y-auto overscroll-contain bg-album text-album-ink shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)]"
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        transition={{ duration: 0.7, ease: EASE.expo }}
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          swipe.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+        }}
+        onTouchEnd={(event) => {
+          const touch = event.changedTouches[0];
+          const start = swipe.current;
+          swipe.current = null;
+          if (!start || !touch) return;
+          const dx = touch.clientX - start.x;
+          if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(touch.clientY - start.y) * 1.5) go(dx < 0 ? 1 : -1);
+        }}
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-35 mix-blend-multiply"
+          style={{ backgroundImage: PAPER_GRAIN }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(110%_80%_at_15%_0%,rgba(255,252,245,0.35),rgba(255,252,245,0)_60%)]"
+        />
+
+        {/* The masthead: which publication this is, where in it you are,
+            and the way out — kept in reach even if the sheet scrolls. */}
+        <div className="sticky top-0 z-20 flex items-center justify-between gap-4 bg-album/95 px-5 pb-2 pt-2 tablet:px-8 tablet:pb-3 tablet:pt-6 desktop:px-10">
+          <p className="font-text text-label uppercase tracking-[0.18em] text-album-ink-2">
+            {directions.title[locale]}
+            <span aria-hidden="true" className="mx-2 text-album-ink/30">
+              —
+            </span>
+            <span className="text-album-ink">{directions.kicker[locale]}</span>
+          </p>
+          <button
+            ref={closeButton}
+            type="button"
+            onClick={close}
+            aria-label={directions.close[locale]}
+            className="-mr-2 flex h-[44px] w-[44px] shrink-0 items-center justify-center text-album-ink-2 transition-colors duration-300 ease-expo hover:text-album-ink"
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
+              <path d="M2 2l12 12M14 2L2 14" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="relative px-5 pb-4 tablet:px-8 tablet:pb-6 desktop:px-10 desktop:pb-7">
+          {/* The chapter, in one sentence — the same over both pages. */}
+          <p className="max-w-[46ch] font-display text-[1.05rem] italic leading-[1.35] text-album-ink/80 short:hidden tablet:text-[1.35rem] [@media(min-width:640px)_and_(max-height:800px)]:hidden">
+            {directions.story[locale]}
+          </p>
+          <span aria-hidden="true" className="mt-4 block h-px bg-album-ink/15 short:mt-0 tablet:mt-6 [@media(min-width:640px)_and_(max-height:800px)]:mt-0" />
+
+          {/* THE PAGES. Every page is laid out invisibly in one grid
+              cell, so the sheet is as tall as the longer story and turning
+              never resizes it; the live page turns over the top. */}
+          <div className="relative mt-4 grid tablet:mt-5">
+            {pages.map((page) => (
+              <div key={page.key} aria-hidden="true" className="invisible col-start-1 row-start-1">
+                <AnnouncementPage item={page} locale={locale} live={false} onClose={close} onMore={more} />
+              </div>
+            ))}
+            <AnimatePresence initial={false} custom={direction}>
+              <Motion.div
+                key={item.key}
+                custom={direction}
+                variants={turn}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="absolute inset-0"
+              >
+                <AnnouncementPage item={item} locale={locale} live onClose={close} onMore={more} />
+              </Motion.div>
+            </AnimatePresence>
+          </div>
+
+        </div>
+
+        {/* Where you are in the insert, and the turn — pinned to the foot
+            of the sheet, so on a phone that has to scroll the sheet the
+            way on is never below the fold. */}
+        <div className="sticky bottom-0 z-20 bg-album/95 px-5 pb-3 tablet:px-8 tablet:pb-4 desktop:px-10 desktop:pb-6">
+          <div className="flex items-center justify-between gap-4 border-t border-album-ink/15 pt-2 tablet:pt-3">
+            <div className="flex items-center gap-4">
+              <p className="figures font-text text-label tracking-[0.18em] text-album-ink-2" aria-live="polite">
+                <span className="text-album-ink">{String(index + 1).padStart(2, '0')}</span>
+                <span aria-hidden="true"> / </span>
+                {String(count).padStart(2, '0')}
+              </p>
+              <div aria-hidden="true" className="flex gap-[6px]">
+                {pages.map((page, position) => (
+                  <span
+                    key={page.key}
+                    className={`block h-px w-[22px] transition-colors duration-500 ${
+                      position === index ? 'bg-album-ink' : 'bg-album-ink/20'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="-mr-2 flex items-center">
+              <button type="button" onClick={() => { go(-1); }} aria-label={directions.previous[locale]} className={small}>
+                <Arrow className="w-[18px] rotate-180" />
+              </button>
+              <button type="button" onClick={() => { go(1); }} aria-label={directions.next[locale]} className={small}>
+                <Arrow className="w-[18px]" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </Motion.div>
+    </div>
+  );
+}
+
+/**
+ * The header's way back in: a brass dot and one word. Integrated with the
+ * navigation rather than floating over the page — it is news from the
+ * studio, not a sales prompt.
+ */
+function AnnouncementEntry({ locale, tone = 'default' }: { locale: Locale; tone?: 'default' | 'bone' }) {
+  return (
+    <button
+      type="button"
+      onClick={openAnnouncement}
+      aria-label={directions.entryLabel[locale]}
+      className={`label inline-flex min-h-[44px] items-center gap-2 transition-colors duration-300 ease-expo desktop:min-h-0 ${
+        tone === 'bone' ? 'text-bone-ink hover:text-bone-ink-2' : 'text-ink hover:text-ink-2'
+      }`}
+    >
+      <span aria-hidden="true" className="relative flex h-[6px] w-[6px]">
+        <span className="absolute inset-0 animate-ping rounded-full bg-brass opacity-40 [animation-duration:2.4s]" />
+        <span className="relative h-[6px] w-[6px] rounded-full bg-brass" />
+      </span>
+      {directions.entry[locale]}
+    </button>
   );
 }
 
