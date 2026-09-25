@@ -158,70 +158,84 @@ const REGISTRY: readonly Project[] = [
       en: 'A 24 hour coffee shop set within a shophouse, designed to balance openness and refinement. Natural materials and unfinished wall textures create a warm, honest atmosphere that feels welcoming and comfortable for everyone, at any hour.',
       id: 'Kedai kopi yang buka 24 jam ini berada dalam sebuah ruko, dirancang untuk menyeimbangkan keterbukaan dan kesan yang lebih halus. Material alami dan tekstur dinding yang dibiarkan apa adanya menciptakan suasana hangat dan jujur yang terasa nyaman bagi siapa pun, kapan pun.',
     },
+    /*
+     * PHOTOGRAPHY UPDATED SEPTEMBER 2026 from the studio's current renders,
+     * most at their own 5:4 — the earlier 3:2 set had been cropped from
+     * compositions like these (`amadya-02` was pixel-for-pixel a crop of
+     * the new counter render, which now takes its id; the Disciplines
+     * preview names it). The earlier `amadya-05`, a phone photograph of
+     * the shophouse before the fit-out, is no longer shown. Earlier files
+     * remain on disk, unreferenced.
+     */
     images: [
       {
-        id: 'amadya-01',
+        id: 'amadya-r01',
         weight: 'lead',
-        focal: [50, 46],
+        focal: [50, 50],
+        file: { name: '2caf03ee-35ff-43a1-a464-a120cf03a7ac.png', width: 1356, height: 1085 },
         alt: {
-          en: 'Amadya storefront: a dark corrugated canopy, hanging greenery along the fascia and an open terrace below.',
-          id: 'Tampak muka Amadya: kanopi gelombang gelap, tanaman rambat di sepanjang fasia, dan teras terbuka di bawahnya.',
+          en: 'The shophouse front: a steep black roof over glazing and timber screens, a planted ledge and the AMADYA Coffee & Eatery sign.',
+          id: 'Muka ruko: atap hitam curam di atas kaca dan sekat kayu, ambang bertanaman, dan papan nama AMADYA Coffee & Eatery.',
+        },
+      },
+      {
+        id: 'amadya-r02',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'indoor 6_.png', width: 1920, height: 1536 },
+        alt: {
+          en: 'A curved timber-clad espresso bar under a timber ceiling, the menu board above.',
+          id: 'Bar espreso melengkung berlapis kayu di bawah plafon kayu, dengan papan menu di atasnya.',
         },
       },
       {
         id: 'amadya-02',
         weight: 'wide',
-        focal: [45, 52],
+        focal: [50, 50],
+        file: { name: 'watermark-removed-indoor 4_.png', width: 2240, height: 1792 },
         alt: {
-          en: 'Pastry counter with open timber shelving, ceramic ware and a round mirror on the concrete wall behind.',
-          id: 'Meja pastry dengan rak kayu terbuka, keramik, dan cermin bundar di dinding beton di belakangnya.',
-        },
-        caption: {
-          en: 'Pastry counter, concrete and timber.',
-          id: 'Meja pastry, beton dan kayu.',
+          en: 'Pastry counter in timber and concrete, with shelving and a round mirror on the wall.',
+          id: 'Meja pastry dari kayu dan beton, dengan rak dan cermin bundar di dinding.',
         },
       },
       {
-        id: 'amadya-04',
+        id: 'amadya-r04',
         weight: 'wide',
-        focal: [52, 52],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Feb 18, 2026, 11_05_411 PM.png', width: 1280, height: 1024 },
         alt: {
-          en: 'Dining area behind sliding timber screens, with a paper lantern pendant and a perforated block wall.',
-          id: 'Area makan di balik sekat kayu geser, dengan lampu gantung kertas dan dinding roster.',
+          en: 'A sage-green wall with a long upholstered banquette, timber tables and brass pendants.',
+          id: 'Dinding hijau sage dengan bangku berjok memanjang, meja kayu, dan lampu gantung kuningan.',
         },
       },
       {
-        id: 'amadya-03',
+        id: 'amadya-r05',
         weight: 'wide',
-        focal: [48, 55],
+        focal: [50, 50],
+        file: { name: 'f54125ed-5a23-4865-9d86-62212c9d3542.png', width: 1163, height: 930 },
         alt: {
-          en: 'Banquette seating along a sage green wall, with timber chairs and brass pendants above.',
-          id: 'Bangku panjang di sepanjang dinding hijau sage, dengan kursi kayu dan lampu gantung kuningan di atasnya.',
-        },
-        caption: {
-          en: 'Banquette, sage and brass.',
-          id: 'Bangku panjang, sage dan kuningan.',
+          en: 'The banquette seen past a timber lattice screen, daylight from the glazed end wall.',
+          id: 'Bangku berjok terlihat dari balik sekat kisi kayu, dengan cahaya dari dinding kaca di ujung ruang.',
         },
       },
-      /*
-       * Published for the first time. The old `amadya-05` was a
-       * macroblocked phone snapshot of a bare room; this is a clean,
-       * evenly lit frame of the same shell, and it is the only
-       * before-state Amadya has left — the previous set carried a
-       * mid-construction stairwell at `-04`, and `-04` is now a finished
-       * dining area.
-       */
       {
-        id: 'amadya-05',
+        id: 'amadya-r06',
         weight: 'detail',
-        focal: [50, 52],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Feb 18, 2026, 11_43_36 PM.png', width: 1536, height: 1024 },
         alt: {
-          en: 'Site documentation: the bare shell before fit-out, patched plaster around a new stair.',
-          id: 'Dokumentasi lapangan: ruang kosong sebelum pengerjaan, plester bertambal di sekitar tangga baru.',
+          en: 'Bar seating and dining along timber-panelled walls under a paper lantern.',
+          id: 'Kursi bar dan area makan di sepanjang dinding berpanel kayu, di bawah lampion kertas.',
         },
-        caption: {
-          en: 'The shell, before fit-out.',
-          id: 'Ruang kosong, sebelum pengerjaan.',
+      },
+      {
+        id: 'amadya-r07',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'watermark-removed-Gemini_Generated_Image_55w8zn55w8zn55w8.png', width: 1768, height: 1414 },
+        alt: {
+          en: 'Dining room with a paper lantern, tall timber doors and open shelving.',
+          id: 'Ruang makan dengan lampion kertas, pintu kayu tinggi, dan rak terbuka.',
         },
       },
     ],
@@ -240,65 +254,82 @@ const REGISTRY: readonly Project[] = [
       id: 'Sebuah rumah lama diubah menjadi kafe komunal, tempat sarapan, sekaligus museum mini bagi warga sekitar untuk berkumpul, bertukar ide, dan menampilkan produk lokal.',
     },
     /*
-     * Every frame in this set is now a finished interior. The old set
-     * led on a shopfront and closed on an as-found documentary frame,
-     * and `images-2` has neither — so the before/after reading is gone
-     * and the captions that carried it have gone with it. What is left
-     * is one room, shot five ways, which suits a project whose whole
-     * subject is a single converted house.
+     * PHOTOGRAPHY UPDATED SEPTEMBER 2026 from the studio's current renders
+     * of "The Prasetyo Coffee & Space 1971" — a new rendering of the house
+     * rather than a re-export, so the earlier five (a different fit-out)
+     * are no longer shown and remain on disk, unreferenced. Seven of the
+     * eight new images; `03_46_56` repeats the street view of `03_45_09`
+     * from closer in and is left out.
      */
     images: [
       {
-        id: 'the-prasetyos-01',
+        id: 'the-prasetyos-r01',
         weight: 'lead',
-        focal: [50, 52],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 03_53_16 PM.png', width: 1402, height: 1122 },
         alt: {
-          en: 'Service counter in stainless steel and slatted timber, under exposed roof beams and black pendant lamps.',
-          id: 'Meja layanan berbahan baja tahan karat dan bilah kayu, di bawah balok atap ekspos dan lampu gantung hitam.',
+          en: 'The counter and dining room under an exposed timber roof, the menu board above the slatted bar.',
+          id: 'Meja bar dan ruang makan di bawah atap kayu ekspos, papan menu di atas bar berkisi.',
         },
       },
       {
-        id: 'the-prasetyos-02',
-        weight: 'lead',
-        focal: [48, 52],
-        alt: {
-          en: 'The counter seen along its length, with a chalkboard menu, a pastry case and a banquette beyond.',
-          id: 'Meja layanan dilihat memanjang, dengan papan menu kapur, etalase pastry, dan bangku panjang di baliknya.',
-        },
-        caption: {
-          en: 'The counter, end to end.',
-          id: 'Meja layanan, dari ujung ke ujung.',
-        },
-      },
-      {
-        id: 'the-prasetyos-03',
+        id: 'the-prasetyos-r02',
         weight: 'wide',
-        focal: [52, 55],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 03_45_09 PM.png', width: 1672, height: 941 },
         alt: {
-          en: 'Timber armchairs at a marble table, against a green painted dado and a shuttered window onto the garden.',
-          id: 'Kursi berlengan kayu di meja marmer, dengan latar dinding hijau setinggi pinggang dan jendela krepyak ke taman.',
+          en: 'The house from the garden: white walls over a green base, louvred shutters, and red stools on the terrace.',
+          id: 'Rumah dari halaman: dinding putih di atas alas hijau, jendela krepyak, dan bangku merah di teras.',
         },
       },
       {
-        id: 'the-prasetyos-05',
+        id: 'the-prasetyos-r03',
         weight: 'wide',
-        focal: [45, 55],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 03_48_13 PM.png', width: 1402, height: 1122 },
         alt: {
-          en: 'The room seen whole under exposed timber roof beams, tables to one side and the counter to the other.',
-          id: 'Ruang dilihat menyeluruh di bawah balok atap kayu ekspos, meja di satu sisi dan meja layanan di sisi lain.',
-        },
-        caption: {
-          en: 'Under the roof beams.',
-          id: 'Di bawah balok atap.',
+          en: 'Dining room with timber posts and rafters, a counter along one side.',
+          id: 'Ruang makan dengan tiang dan kasau kayu, meja bar di satu sisi.',
         },
       },
       {
-        id: 'the-prasetyos-04',
+        id: 'the-prasetyos-r04',
         weight: 'wide',
-        focal: [48, 52],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 03_49_41 PM.png', width: 1402, height: 1122 },
         alt: {
-          en: 'Steel-framed tables and a rattan armchair against a green dado, with a framed vintage matchbox print above.',
-          id: 'Meja berangka baja dan kursi rotan dengan latar dinding hijau, serta cetakan korek api antik berbingkai di atasnya.',
+          en: 'The coffee counter head-on: slatted timber, an espresso machine and a pastry case.',
+          id: 'Meja kopi dari depan: kisi kayu, mesin espreso, dan etalase pastry.',
+        },
+      },
+      {
+        id: 'the-prasetyos-r05',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 03_51_25 PM.png', width: 1122, height: 898 },
+        alt: {
+          en: 'A lounge corner with a leather sofa, a clothing rail and framed prints on white walls.',
+          id: 'Sudut santai dengan sofa kulit, gantungan pakaian, dan cetakan berbingkai di dinding putih.',
+        },
+      },
+      {
+        id: 'the-prasetyos-r06',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 03_55_05 PM.png', width: 1402, height: 1122 },
+        alt: {
+          en: 'Looking through the room to a doorway onto the courtyard.',
+          id: 'Pandangan menembus ruang ke pintu menuju halaman.',
+        },
+      },
+      {
+        id: 'the-prasetyos-r07',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 03_56_25 PM.png', width: 1115, height: 1393 },
+        alt: {
+          en: 'A corner with a vintage cabinet, a mirror and a woven rug beneath the rafters.',
+          id: 'Sudut dengan lemari antik, cermin, dan karpet anyam di bawah kasau.',
         },
       },
     ],
@@ -316,58 +347,93 @@ const REGISTRY: readonly Project[] = [
       en: 'This cafe project was designed as a vibrant gathering space in the heart of Jakarta, embracing an industrial aesthetic with a strong focus on sustainability. By maximizing the use of recycled materials and working within a limited budget, the design creates a distinctive and iconic destination with character, warmth, and lasting appeal.',
       id: 'Proyek kafe ini dirancang sebagai ruang berkumpul yang hidup di tengah kota Jakarta, mengusung estetika industrial dengan perhatian besar pada keberlanjutan. Dengan memaksimalkan penggunaan material daur ulang dan bekerja dalam anggaran terbatas, desain ini menciptakan destinasi yang khas dan mudah dikenali, penuh karakter, kehangatan, dan daya tarik yang bertahan lama.',
     },
+    /*
+     * PHOTOGRAPHY UPDATED SEPTEMBER 2026 from the studio's current renders
+     * (supplied at 1373–1536px, 3:2). They re-render every view the
+     * earlier set had — the earlier `kintaro-cafe-0x-3x2.jpg` files remain
+     * on disk, unreferenced — and add the counter, the planter dining bay
+     * and the courtyard. `kintaro-cafe-02` keeps its id (the exterior) so
+     * the Disciplines preview that names it still resolves.
+     */
     images: [
       {
-        id: 'kintaro-cafe-01',
+        id: 'kintaro-cafe-r01',
         weight: 'lead',
         focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_38_36 PM.png', width: 1536, height: 1024 },
         alt: {
-          en: 'Service counter in stainless steel and white tile under the illuminated Kintaro sign.',
-          id: 'Meja layanan berbahan baja tahan karat dan keramik putih di bawah signage Kintaro yang menyala.',
-        },
-      },
-      {
-        id: 'kintaro-cafe-05',
-        weight: 'lead',
-        focal: [48, 52],
-        alt: {
-          en: 'Glazed shopfront seen from the covered forecourt, pergola shadows falling across the wall.',
-          id: 'Fasad kaca dilihat dari halaman beratap, bayangan pergola jatuh di sepanjang dinding.',
-        },
-        caption: {
-          en: 'Forecourt, under the pergola.',
-          id: 'Halaman muka, di bawah pergola.',
-        },
-      },
-      {
-        id: 'kintaro-cafe-03',
-        weight: 'wide',
-        focal: [52, 50],
-        alt: {
-          en: 'Dining area against an oriented-strand board wall hung with merchandise and shelving, under black track lighting.',
-          id: 'Area makan dengan dinding OSB berisi merchandise dan rak, di bawah lampu rel hitam.',
-        },
-      },
-      {
-        id: 'kintaro-cafe-04',
-        weight: 'wide',
-        focal: [45, 52],
-        alt: {
-          en: 'Long communal timber table under exposed services, against precast concrete panels.',
-          id: 'Meja komunal kayu panjang di bawah utilitas ekspos, dengan latar panel beton pracetak.',
-        },
-        caption: {
-          en: 'The communal table.',
-          id: 'Meja komunal.',
+          en: 'Order counter under a KINTARO sign, dining tables and a black track-light frame beyond.',
+          id: 'Meja pemesanan di bawah papan KINTARO, meja makan dan rangka lampu rel hitam di baliknya.',
         },
       },
       {
         id: 'kintaro-cafe-02',
         weight: 'wide',
-        focal: [50, 52],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_35_58 PM.png', width: 1477, height: 985 },
         alt: {
-          en: 'Street elevation under a deep hipped roof, with a timber-framed picture window and a red brick screen.',
-          id: 'Tampak jalan di bawah atap limas yang dalam, dengan jendela berbingkai kayu dan sekat bata merah.',
+          en: 'The pavilion from the street: a hipped roof over concrete and dark tile, a timber-framed window and a breeze-block screen.',
+          id: 'Paviliun dari jalan: atap perisai di atas beton dan keramik gelap, jendela berbingkai kayu, dan dinding roster.',
+        },
+      },
+      {
+        id: 'kintaro-cafe-r03',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_37_04 PM.png', width: 1536, height: 1024 },
+        alt: {
+          en: 'The counter up close, beneath the black KINTARO fascia and a tiled back wall.',
+          id: 'Meja pemesanan dari dekat, di bawah fasia hitam KINTARO dan dinding belakang berkeramik.',
+        },
+      },
+      {
+        id: 'kintaro-cafe-r04',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_40_05 PM.png', width: 1373, height: 915 },
+        alt: {
+          en: 'Dining bay around a concrete planter, under an exposed concrete frame and track lighting.',
+          id: 'Area makan di sekitar pot beton, di bawah rangka beton ekspos dan lampu rel.',
+        },
+      },
+      {
+        id: 'kintaro-cafe-r05',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_41_56 PM.png', width: 1536, height: 1024 },
+        alt: {
+          en: 'Merchandise wall of timber panels and black grid shelving above communal tables.',
+          id: 'Dinding merchandise dari panel kayu dan rak kisi hitam di atas meja bersama.',
+        },
+      },
+      {
+        id: 'kintaro-cafe-r06',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_48_35 PM.png', width: 1536, height: 1024 },
+        alt: {
+          en: 'A long timber table and rows of black chairs under the track-light frame.',
+          id: 'Meja kayu panjang dan deretan kursi hitam di bawah rangka lampu rel.',
+        },
+      },
+      {
+        id: 'kintaro-cafe-r07',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_45_09 PM.png', width: 1536, height: 1024 },
+        alt: {
+          en: 'Courtyard seating on pebbles, facing the timber-framed window into the bar.',
+          id: 'Tempat duduk halaman di atas kerikil, menghadap jendela berbingkai kayu ke arah bar.',
+        },
+      },
+      {
+        id: 'kintaro-cafe-r08',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 21, 2026, 04_46_28 PM.png', width: 1536, height: 1024 },
+        alt: {
+          en: 'Covered courtyard with a brick wall, a stepped concrete bench and planting.',
+          id: 'Halaman beratap dengan dinding bata, bangku beton berundak, dan tanaman.',
         },
       },
     ],
@@ -454,60 +520,104 @@ const REGISTRY: readonly Project[] = [
       en: 'This residential renovation project aims to enhance the quality of living through thoughtful spatial reconfiguration, functional optimization, and a comprehensive architectural and interior transformation. By redefining the existing layout and introducing a cohesive design language, the project creates a home that is more efficient, comfortable, and better aligned with the evolving needs and lifestyle of its occupants.',
       id: 'Proyek renovasi hunian ini bertujuan meningkatkan kualitas tinggal melalui penataan ulang ruang, optimalisasi fungsi, serta transformasi arsitektur dan interior secara menyeluruh. Dengan menata ulang denah yang ada dan menghadirkan bahasa desain yang menyatu, proyek ini menciptakan rumah yang lebih efisien, nyaman, dan selaras dengan kebutuhan serta gaya hidup penghuninya yang terus berkembang.',
     },
+    /*
+     * PHOTOGRAPHY UPDATED SEPTEMBER 2026 from the studio's current renders,
+     * which re-render the facade, living room, pantry and study and add
+     * the bedroom, kitchen, hallway and garden terrace. The dining room
+     * (`mrs-d-house-01`) is the one earlier view the new set does not
+     * cover, and is kept. `mrs-d-house-02` keeps its id (the facade) so
+     * the Disciplines preview that names it still resolves. Other earlier
+     * files remain on disk, unreferenced.
+     */
     images: [
       {
         id: 'mrs-d-house-02',
         weight: 'lead',
-        focal: [50, 52],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Jun 28, 2026, 10_29_011 PM.png', width: 1440, height: 960 },
         alt: {
-          en: 'Street elevation with red brick arches, a first-floor balcony and planting along the parapet.',
-          id: 'Tampak jalan dengan lengkungan bata merah, balkon lantai dua, dan tanaman di sepanjang parapet.',
+          en: 'The renovated facade: a white rounded volume, a brick-faced balcony under a black pergola, and a circular brick motif by the door.',
+          id: 'Fasad hasil renovasi: massa putih melengkung, balkon berlapis bata di bawah pergola hitam, dan motif bata melingkar di dekat pintu.',
+        },
+      },
+      {
+        id: 'mrs-d-house-r02',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 22, 2026, 03_08_16 PM.png', width: 1437, height: 958 },
+        alt: {
+          en: 'Living room beneath the timber stair, looking through to the dining room and garden doors.',
+          id: 'Ruang keluarga di bawah tangga kayu, memandang ke ruang makan dan pintu ke taman.',
         },
       },
       {
         id: 'mrs-d-house-01',
-        weight: 'lead',
+        weight: 'wide',
         focal: [52, 52],
+        file: { name: 'mrs-d-house-01-3x2.jpg', width: 4200, height: 2800 },
         alt: {
           en: 'Dining table under an arched opening, between a slatted timber wall and full-height pale cabinetry.',
           id: 'Meja makan di bawah bukaan melengkung, di antara dinding bilah kayu dan kabinet terang setinggi dinding.',
         },
-        caption: {
-          en: 'Dining, through the arch.',
-          id: 'Ruang makan, lewat lengkungan.',
+      },
+      {
+        id: 'mrs-d-house-r03',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 22, 2026, 03_06_57 PM.png', width: 1437, height: 958 },
+        alt: {
+          en: 'Pantry wall of timber cabinetry with lit open shelving beside a sage-green wall.',
+          id: 'Dinding pantry berkabinet kayu dengan rak terbuka berlampu di samping dinding hijau sage.',
         },
       },
       {
-        id: 'mrs-d-house-03',
+        id: 'mrs-d-house-r04',
         weight: 'wide',
-        focal: [48, 52],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 22, 2026, 03_15_55 PM.png', width: 1437, height: 958 },
         alt: {
-          en: 'Living room beneath the stair, with a deep sectional sofa, a gallery wall and the dining room beyond.',
-          id: 'Ruang keluarga di bawah tangga, dengan sofa sudut, dinding galeri, dan ruang makan di baliknya.',
+          en: 'Kitchen with pale timber cabinets, a tiled splashback and a sliding door to the garden.',
+          id: 'Dapur dengan kabinet kayu terang, backsplash keramik, dan pintu geser ke taman.',
         },
       },
       {
-        id: 'mrs-d-house-04',
+        id: 'mrs-d-house-r05',
         weight: 'wide',
-        focal: [55, 55],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 22, 2026, 03_11_51 PM.png', width: 1437, height: 958 },
         alt: {
-          en: 'Pantry run in pale timber against a sage wall, with open shelving, jars and built-in ovens.',
-          id: 'Deretan pantri kayu terang dengan latar dinding sage, rak terbuka, toples, dan oven tanam.',
-        },
-        caption: {
-          en: 'Pantry, sage and timber.',
-          id: 'Pantri, sage dan kayu.',
+          en: 'Bedroom with an upholstered headboard wall, a crib and a built-in vanity.',
+          id: 'Kamar tidur dengan dinding sandaran berjok, boks bayi, dan meja rias terpasang.',
         },
       },
-      /* Published for the first time; the old `-05` was a part-built
-         kitchen shot on a phone. */
       {
-        id: 'mrs-d-house-05',
+        id: 'mrs-d-house-r06',
         weight: 'wide',
-        focal: [48, 52],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 22, 2026, 03_31_27 PM.png', width: 1437, height: 958 },
         alt: {
-          en: 'Multipurpose room with built-in shelving, a panelled dado and an arched window over the treadmill.',
-          id: 'Ruang serbaguna dengan rak tanam, dinding berpanel setinggi pinggang, dan jendela melengkung di atas treadmill.',
+          en: 'Arched doorways and wainscoted walls, with open shelving in a niche.',
+          id: 'Pintu-pintu lengkung dan dinding berlambris, dengan rak terbuka di dalam ceruk.',
+        },
+      },
+      {
+        id: 'mrs-d-house-r07',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 22, 2026, 03_22_56 PM.png', width: 1437, height: 958 },
+        alt: {
+          en: 'A study and exercise room with built-in shelving and an arched window.',
+          id: 'Ruang kerja dan olahraga dengan rak tanam dan jendela lengkung.',
+        },
+      },
+      {
+        id: 'mrs-d-house-r08',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Sep 22, 2026, 03_24_26 PM.png', width: 1436, height: 957 },
+        alt: {
+          en: 'Covered garden terrace with raised planters, hanging plants and a timber potting table.',
+          id: 'Teras taman beratap dengan bak tanam, tanaman gantung, dan meja tanam kayu.',
         },
       },
     ],
@@ -525,63 +635,92 @@ const REGISTRY: readonly Project[] = [
       en: 'This renovation transforms a compact kitchen into a functional, storage-efficient space inspired by Japandi design. Warm materials, soft tones, and clean lines create an inviting kitchen and dining area, while the family room, living room, and multipurpose space are well integrated to provide a more open and welcoming environment for everyday living and entertaining.',
       id: 'Renovasi ini mengubah dapur yang sempit menjadi ruang yang fungsional dan efisien dalam penyimpanan, terinspirasi desain Japandi. Material hangat, warna-warna lembut, dan garis yang bersih menciptakan area dapur dan makan yang mengundang, sementara ruang keluarga, ruang tamu, dan ruang serbaguna terintegrasi dengan baik untuk menghadirkan suasana yang lebih terbuka dan ramah bagi keseharian maupun saat menerima tamu.',
     },
+    /*
+     * PHOTOGRAPHY UPDATED SEPTEMBER 2026 from the studio's current renders.
+     * The new images are the originals the earlier set came from (the
+     * kitchen and utility views were pixel-for-pixel crops of them) plus
+     * the rooms it did not show. Earlier files remain on disk,
+     * unreferenced.
+     */
     images: [
-      /* `-03` opens the project, and it is the frame that was held back
-         in the previous revision as "a render cropped through the middle
-         of a television". It is now the kitchen this renovation is
-         actually about, shot square, and nothing else in the set has a
-         better claim on the lead. */
       {
-        id: 'ms-ra-house-03',
+        id: 'ms-ra-house-r01',
         weight: 'lead',
-        focal: [52, 52],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Jul 29, 2026, 01_41_091 PM.png', width: 1386, height: 924 },
         alt: {
-          en: 'Kitchen tucked beneath the stair, with pale timber cabinetry, under-shelf lighting and a white tiled splashback.',
-          id: 'Dapur yang menyelip di bawah tangga, dengan kabinet kayu terang, lampu bawah rak, dan dinding keramik putih.',
+          en: 'Family room with a folding rattan screen beneath timber slats, white chairs and a round table.',
+          id: 'Ruang keluarga dengan sekat lipat rotan di bawah kisi kayu, kursi putih, dan meja bundar.',
         },
       },
       {
-        id: 'ms-ra-house-02',
-        weight: 'lead',
-        focal: [50, 52],
-        alt: {
-          en: 'Sitting area against a slatted timber and woven panel wall, with two moulded chairs and a round timber table.',
-          id: 'Area duduk dengan dinding bilah kayu dan panel anyaman, dua kursi cetak, dan meja bundar kayu.',
-        },
-        caption: {
-          en: 'Sitting area, timber and weave.',
-          id: 'Area duduk, kayu dan anyaman.',
-        },
-      },
-      {
-        id: 'ms-ra-house-05',
+        id: 'ms-ra-house-r02',
         weight: 'wide',
-        focal: [48, 52],
+        focal: [50, 50],
+        file: { name: 'Gemini_Generated_Image_hm0mzyhm0mzyhm0m.png', width: 2227, height: 1792 },
         alt: {
-          en: 'Living room with a wall-mounted screen on a timber panel, a floating console and open white shelving.',
-          id: 'Ruang keluarga dengan televisi di panel kayu, konsol melayang, dan rak putih terbuka.',
+          en: 'Kitchen fitted beneath the stair: timber cabinetry with lit niches, a white tiled splashback and a steel refrigerator.',
+          id: 'Dapur yang dipasang di bawah tangga: kabinet kayu dengan ceruk berlampu, backsplash keramik putih, dan kulkas baja.',
         },
       },
       {
-        id: 'ms-ra-house-01',
+        id: 'ms-ra-house-r03',
         weight: 'wide',
-        focal: [55, 48],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Jul 29, 2026, 01_39_03 PM.png', width: 1388, height: 925 },
         alt: {
-          en: 'Living room wall with a wall-mounted screen, a low cabinet run and open shelving through to the hall.',
-          id: 'Dinding ruang keluarga dengan televisi dinding, deretan kabinet rendah, dan rak terbuka menembus ke lorong.',
+          en: 'A TV wall between timber panels, a floating cabinet and white shelving with books.',
+          id: 'Dinding TV di antara panel kayu, kabinet gantung, dan rak putih berisi buku.',
         },
       },
       {
-        id: 'ms-ra-house-04',
+        id: 'ms-ra-house-r04',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Jul 29, 2026, 01_42_461 PM.png', width: 1386, height: 924 },
+        alt: {
+          en: 'The rattan screen folded back, opening onto a study.',
+          id: 'Sekat rotan yang dilipat, membuka ke ruang kerja.',
+        },
+      },
+      {
+        id: 'ms-ra-house-r05',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Jul 29, 2026, 01_46_481 PM.png', width: 1388, height: 925 },
+        alt: {
+          en: 'A sitting corner with an upholstered bench, framed leaf prints and an arched doorway.',
+          id: 'Sudut duduk dengan bangku berjok, cetakan daun berbingkai, dan pintu lengkung.',
+        },
+      },
+      {
+        id: 'ms-ra-house-r06',
+        weight: 'wide',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Jul 29, 2026, 02_01_001 PM.png', width: 1410, height: 940 },
+        alt: {
+          en: 'Entry with white chairs, a curtain and shelving along the wall.',
+          id: 'Area masuk dengan kursi putih, tirai, dan rak di sepanjang dinding.',
+        },
+      },
+      {
+        id: 'ms-ra-house-r07',
         weight: 'detail',
-        focal: [50, 55],
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Aug 4, 2026, 11_20_241 AM.png', width: 1454, height: 969 },
         alt: {
-          en: 'Utility nook with overhead cabinets, a hanging rail and an ironing bench built into the run.',
-          id: 'Sudut utilitas dengan kabinet atas, gantungan baju, dan meja setrika yang menyatu dengan kabinet.',
+          en: 'Full-height wardrobes in timber and white, a stair beyond the glass.',
+          id: 'Lemari setinggi plafon dari kayu dan putih, tangga di balik kaca.',
         },
-        caption: {
-          en: 'Utility nook, as built.',
-          id: 'Sudut utilitas, terpasang.',
+      },
+      {
+        id: 'ms-ra-house-r08',
+        weight: 'detail',
+        focal: [50, 50],
+        file: { name: 'ChatGPT Image Aug 4, 2026, 11_21_32 AM.png', width: 1551, height: 1014 },
+        alt: {
+          en: 'Utility wall with a fitted ironing counter and wall cabinets.',
+          id: 'Dinding utilitas dengan meja setrika terpasang dan kabinet atas.',
         },
       },
     ],
