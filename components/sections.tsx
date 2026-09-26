@@ -534,11 +534,6 @@ export function Manifesto({ locale }: { locale: Locale }) {
               text={home.manifesto[locale]}
               className="font-display text-statement text-ink"
             />
-            <Reveal delay={0.1}>
-              <p className="mt-8 max-w-[46ch] font-text text-body text-ink-2">
-                {home.manifestoNote[locale]}
-              </p>
-            </Reveal>
           </div>
         </Grid>
       </Container>

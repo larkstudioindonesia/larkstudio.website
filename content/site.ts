@@ -167,12 +167,8 @@ export const home = {
   /* The manifesto. Read one word at a time as the reader scrolls, so
      it is written in short clauses that survive being lit up piecemeal. */
   manifesto: {
-    en: 'Lark Studio focuses on functional tropical architecture and warm material driven interiors, combining wood, breeze block, and natural textures to create spaces that feel calm, efficient, and enduring.',
-    id: 'Lark Studio berfokus pada arsitektur tropis yang fungsional dan desain interior yang mengedepankan material-material hangat, dengan memadukan kayu, breeze block, dan tekstur alami untuk menciptakan ruang yang terasa tenang, efisien, dan tahan lama.',
-  },
-  manifestoNote: {
-    en: 'Our work focuses on residential and commercial projects, helping clients transform ideas into spaces that feel intentional and practical.',
-    id: 'Pekerjaan kami berfokus pada proyek residensial dan komersial, membantu klien mewujudkan ide menjadi ruang yang dirancang secara matang, fungsional, dan praktis.',
+    en: 'LARK turns vision into shape through architecture, interiors, and creative design, translating ideas into spaces that are thoughtful, functional, and full of character. Every project begins with a vision and evolves through a process of exploration, collaboration, and making.',
+    id: 'LARK mewujudkan visi menjadi bentuk melalui arsitektur, interior, dan desain kreatif, menerjemahkan gagasan menjadi ruang yang dirancang dengan cermat, fungsional, dan penuh karakter. Setiap proyek berawal dari sebuah visi, lalu berkembang melalui proses eksplorasi, kolaborasi, dan pengerjaan.',
   },
 
   closing: {

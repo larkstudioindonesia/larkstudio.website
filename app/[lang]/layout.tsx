@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { Analytics } from '@vercel/analytics/next';
 import '@/app/globals.css';
 
 import { brandFace, isLocale, organisationJsonLd } from '@/lib/site';
@@ -140,6 +141,10 @@ export default async function LocaleLayout({
             — and it is what stops six consecutive full-width areas of
             near-black reading as flat. */}
         <div className="grain no-print" aria-hidden="true" />
+
+        {/* Vercel Analytics — once, here, in the root layout, so every route
+            in both locales is counted. Cookieless; no consent banner. */}
+        <Analytics />
       </body>
     </html>
   );
