@@ -5,7 +5,7 @@ import { buildMetadata, isLocale, paths } from '@/lib/site';
 import type { Locale } from '@/content/types';
 import { findImage, projects } from '@/content/projects';
 import { approach, home } from '@/content/site';
-import { Closing, Directions, Disciplines, Hero, Manifesto, Practice, Process } from '@/components/sections';
+import { Closing, Directions, Disciplines, Hero, Manifesto, Practice, Process, Team } from '@/components/sections';
 import { Portfolio } from '@/components/portfolio';
 
 /**
@@ -22,6 +22,8 @@ import { Portfolio } from '@/components/portfolio';
  *               air after eight screens of photography
  *   Disciplines what the studio does, evidence summoned to the pointer
  *   Process     how it does it, on a rule that draws itself
+ *   Who We Are  the seven people of the studio, laid on the table by
+ *               the scroll
  *   In Practice the studio at work — site visits, measuring, working
  *               sessions — turned through like pages
  *   New Directions  Larkscapes.id and Larkworks.id — where the studio
@@ -83,6 +85,7 @@ export default async function HomePage({
       <Disciplines locale={locale} />
 
       <Process stages={approach.stages} locale={locale} />
+      <Team locale={locale} />
       <Practice locale={locale} />
       <Directions locale={locale} />
       <Closing locale={locale} />

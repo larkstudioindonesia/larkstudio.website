@@ -45,7 +45,7 @@ import {
 import { LOCALES, type Locale, type Photograph } from '@/content/types';
 import { ARCHIVE, framePhotograph } from '@/content/projects';
 import { directions, site, ui } from '@/content/site';
-import { LOCALE_LABEL, paths, translatePath, whatsappLink } from '@/lib/site';
+import { LOCALE_LABEL, paths, THEME_KEY, translatePath, whatsappLink } from '@/lib/site';
 import { Arrow, Container, Figures, Grid, Print, TextLink, printAspect } from '@/components/ui';
 
 /**
@@ -88,6 +88,7 @@ function items(locale: Locale) {
     { key: 'work', href: `${paths.home(locale)}#work`, target: 'work', label: ui.navWork[locale] },
     { key: 'approach', href: paths.approach(locale), target: null, label: ui.navApproach[locale] },
     { key: 'studio', href: paths.studio(locale), target: null, label: ui.navStudio[locale] },
+    { key: 'team', href: paths.team(locale), target: null, label: ui.navTeam[locale] },
     { key: 'contact', href: paths.contact(locale), target: null, label: ui.navContact[locale] },
   ] as const;
 }
@@ -109,6 +110,81 @@ function navClick(target: string | null) {
     event.preventDefault();
     history.replaceState(null, '', `#${target}`);
   };
+}
+
+/**
+ * LIGHT / DARK, set like the language toggle beside it — two words, the
+ * current one in ink. The theme itself lives on `<html data-theme>`,
+ * written before first paint by THEME_SCRIPT; this only changes it and
+ * remembers the choice. Until the reader chooses, the site follows the
+ * system setting, live.
+ *
+ * Which word is current is shown by CSS (`.when-light` / `.when-dark`
+ * style the pair), so the server HTML and the first client render agree
+ * whatever the theme; `aria-pressed` is added after mount for the same
+ * reason.
+ */
+function ThemeToggle({ locale }: { locale: Locale }) {
+  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const read = () => (root.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+    setTheme(read());
+    const media = window.matchMedia('(prefers-color-scheme: light)');
+    const follow = () => {
+      let stored: string | null = null;
+      try {
+        stored = window.localStorage.getItem(THEME_KEY);
+      } catch {
+        /* no storage: keep following the system */
+      }
+      if (stored === 'light' || stored === 'dark') return;
+      root.setAttribute('data-theme', media.matches ? 'light' : 'dark');
+      setTheme(read());
+    };
+    media.addEventListener('change', follow);
+    return () => {
+      media.removeEventListener('change', follow);
+    };
+  }, []);
+
+  const choose = (next: 'light' | 'dark') => {
+    document.documentElement.setAttribute('data-theme', next);
+    try {
+      window.localStorage.setItem(THEME_KEY, next);
+    } catch {
+      /* the choice holds for this page view only */
+    }
+    setTheme(next);
+  };
+
+  const option = (value: 'light' | 'dark', label: string) => (
+    <button
+      type="button"
+      onClick={() => {
+        choose(value);
+      }}
+      {...(theme !== null && { 'aria-pressed': theme === value })}
+      className={`inline-flex min-h-[44px] items-center transition-colors duration-300 ease-expo hover:text-ink desktop:min-h-0 ${
+        value === 'light'
+          ? '[html[data-theme=light]_&]:text-ink [html:not([data-theme=light])_&]:text-ink-3'
+          : '[html[data-theme=light]_&]:text-ink-3 [html:not([data-theme=light])_&]:text-ink'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="flex items-center gap-2 font-text text-label" role="group" aria-label={ui.theme[locale]}>
+      {option('light', ui.themeLight[locale])}
+      <span aria-hidden="true" className="text-ink-3">
+        /
+      </span>
+      {option('dark', ui.themeDark[locale])}
+    </div>
+  );
 }
 
 /**
@@ -193,7 +269,7 @@ function Navigation({ locale, tone = 'default' }: { locale: Locale; tone?: 'defa
 
   return (
     <nav aria-label="Primary">
-      <ul className={bone ? 'flex flex-col gap-3' : 'flex items-center gap-7'}>
+      <ul className={bone ? 'flex flex-col gap-3' : 'flex items-center gap-5 min-[1280px]:gap-7'}>
         {items(locale).map((item) => {
           /* Compare paths, not hrefs: `/en#work` and `/en` are the same
              document, and the Work item must still read as current on
@@ -261,13 +337,19 @@ export function Header({ locale }: { locale: Locale }) {
       <Motion.header
         className="no-print fixed inset-x-0 top-0 z-60"
         initial={false}
-        animate={{
-          y: hidden ? '-105%' : '0%',
-          backgroundColor: scrolled && !menu.on ? 'rgba(11,11,12,0.72)' : 'rgba(11,11,12,0)',
-        }}
+        animate={{ y: hidden ? '-105%' : '0%' }}
         transition={{ duration: 0.55, ease: EASE.expo }}
         style={{ backdropFilter: scrolled && !menu.on ? 'blur(14px)' : 'none' }}
       >
+        {/* The surface: the paper token at 72%, faded in by opacity so it
+            follows the theme (a colour string would not). */}
+        <Motion.div
+          aria-hidden="true"
+          className="absolute inset-0 bg-paper/72"
+          initial={false}
+          animate={{ opacity: scrolled && !menu.on ? 1 : 0 }}
+          transition={{ duration: 0.55, ease: EASE.expo }}
+        />
         {/* The hairline arrives with the surface rather than snapping on
             — a border that appears at full strength is the most common
             tell of a scroll-aware header. */}
@@ -290,7 +372,7 @@ export function Header({ locale }: { locale: Locale }) {
           want, and it is a property of where the component sits rather
           than of a flag it has to carry.
         */}
-        <div className="mx-auto flex w-full max-w-structure items-center justify-between px-5 py-4 tablet:px-7 tablet:py-5 desktop:px-8">
+        <div className="relative mx-auto flex w-full max-w-structure items-center justify-between px-5 py-4 tablet:px-7 tablet:py-5 desktop:px-8">
           <Motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={act2 ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
@@ -327,7 +409,9 @@ export function Header({ locale }: { locale: Locale }) {
                 height={200}
                 priority
                 unoptimized
-                className="h-[42px] w-[42px] object-contain transition-transform duration-500 ease-expo group-hover:rotate-[8deg] tablet:h-[46px] tablet:w-[46px]"
+                className={`h-[42px] w-[42px] object-contain transition-transform duration-500 ease-expo group-hover:rotate-[8deg] tablet:h-[46px] tablet:w-[46px] ${
+                  menu.on ? '' : 'logo-on-paper'
+                }`}
               />
             </Link>
           </Motion.div>
@@ -336,7 +420,7 @@ export function Header({ locale }: { locale: Locale }) {
               is open — otherwise it plays out behind the overlay and the
               visitor arrives on a header that has already finished. */}
           <Motion.div
-            className="hidden items-center gap-8 desktop:flex"
+            className="hidden items-center gap-6 whitespace-nowrap desktop:flex min-[1280px]:gap-8"
             variants={stagger(0.08, 0.3)}
             initial="hidden"
             animate={act2 ? 'visible' : 'hidden'}
@@ -350,6 +434,10 @@ export function Header({ locale }: { locale: Locale }) {
             <Motion.span aria-hidden="true" variants={fadeUp} className="h-4 w-px bg-line-strong" />
             <Motion.div variants={fadeUp}>
               <LanguageToggle locale={locale} />
+            </Motion.div>
+            <Motion.span aria-hidden="true" variants={fadeUp} className="h-4 w-px bg-line-strong" />
+            <Motion.div variants={fadeUp}>
+              <ThemeToggle locale={locale} />
             </Motion.div>
           </Motion.div>
 
@@ -539,7 +627,11 @@ function Menu({
                 {site.instagram.handle}
               </TextLink>
             </div>
-            <LanguageToggle locale={locale} />
+            <div className="flex items-center gap-6">
+              <LanguageToggle locale={locale} />
+              <span aria-hidden="true" className="h-4 w-px bg-line-strong" />
+              <ThemeToggle locale={locale} />
+            </div>
           </Motion.div>
         </Motion.div>
       )}
@@ -1201,7 +1293,7 @@ function Overture({ onFinish }: { onFinish: () => void }) {
     <Motion.div
       data-overture=""
       aria-hidden="true"
-      className="no-print fixed inset-0 z-90 overflow-hidden bg-paper"
+      className="theme-dark no-print fixed inset-0 z-90 overflow-hidden bg-paper"
       exit={{ opacity: 0 }}
       transition={{ duration: 0.9, ease: EASE.quart }}
     >
@@ -1846,15 +1938,15 @@ export function Cursor() {
       style={{ x: springX, y: springY }}
     >
       <Motion.div
-        className="flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-ink/60"
+        /* Colours are classes on the tokens, so the ring follows the
+           theme; only size and opacity are animated. */
+        className={`flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border transition-colors duration-300 ${
+          label !== null ? 'border-transparent bg-brass/92' : 'border-ink/50 bg-transparent'
+        }`}
         animate={{
           width: size,
           height: size,
           opacity: active ? 1 : 0,
-          backgroundColor:
-            label !== null ? 'rgba(200,160,106,0.92)' : 'rgba(244,242,237,0)',
-          borderColor:
-            label !== null ? 'rgba(200,160,106,0)' : 'rgba(244,242,237,0.5)',
         }}
         transition={{ duration: 0.4, ease: EASE.expo }}
       >

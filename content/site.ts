@@ -72,6 +72,11 @@ export const ui = {
   navWork: { en: 'Work', id: 'Karya' },
   navApproach: { en: 'Approach', id: 'Cara Kerja' },
   navStudio: { en: 'Studio', id: 'Studio' },
+  navTeam: { en: 'Who We Are', id: 'Siapa Kami' },
+  meetStudio: { en: 'Meet the studio', id: 'Kenali studio' },
+  theme: { en: 'Colour theme', id: 'Tema warna' },
+  themeLight: { en: 'Light', id: 'Terang' },
+  themeDark: { en: 'Dark', id: 'Gelap' },
   navContact: { en: 'Contact', id: 'Kontak' },
 
   selectedWork: { en: 'Selected work', id: 'Karya pilihan' },
@@ -607,4 +612,91 @@ export const directions = {
       feature: [worksWall, worksStair, worksCoffee],
     },
   ],
+} as const;
+
+/* ------------------------------------------------------------------ *
+ * Home — Who We Are
+ * ------------------------------------------------------------------ */
+
+/**
+ * THE SEVEN PEOPLE OF THE STUDIO, from `images-2/projects/profile`.
+ *
+ * Each person is supplied twice at 1080×1350 (4:5): `Artboard N.png` in
+ * colour and `Artboard N_.png` in black and white. The section lays the
+ * black-and-white prints on the table like a contact sheet; a print turns
+ * to colour under the pointer, and the lightbox shows the colour original.
+ *
+ * NAMES ARE NOT YET KNOWN. The files carry none and nothing else in the
+ * repository does, so `name` is `null` and the section shows the role
+ * alone until it is filled in. THE ROLE-TO-PORTRAIT MAPPING IS
+ * PROVISIONAL: roles are assigned in artboard order (1, 2, 3, 5, 6, 7, 8 —
+ * there is no Artboard 4). Confirm or correct both here; nothing else
+ * needs to change.
+ */
+export type TeamGroup = 'leadership' | 'design' | 'practices';
+
+type TeamMember = {
+  readonly key: string;
+  readonly name: string | null;
+  readonly role: Localized<string>;
+  /** A clarifying line under the role, where the title alone misleads. */
+  readonly note?: Localized<string>;
+  readonly group: TeamGroup;
+  /** The artboard number in the profile folder. */
+  readonly artboard: number;
+};
+
+const portrait = (artboard: number, mono: boolean, alt: Localized<string>): Photograph => ({
+  src: encodeURI(`/images-2/projects/profile/Artboard ${String(artboard)}${mono ? '_' : ''}.png`),
+  width: 1080,
+  height: 1350,
+  alt,
+  credit: alt,
+});
+
+const MEMBERS: readonly TeamMember[] = [
+  { key: 'managing-director', name: 'Ridhan Prasetyo', artboard: 5, group: 'leadership',
+    role: { en: 'Managing Director', id: 'Managing Director' } },
+  { key: 'marketing-director', name: 'Latifah Qurrota A ', artboard: 3, group: 'leadership',
+    role: { en: 'Marketing Director', id: 'Marketing Director' } },
+  { key: 'corporate-affairs', name: 'Akmal Rifqy', artboard: 6, group: 'leadership',
+    role: { en: 'Corporate Affairs Director', id: 'Corporate Affairs Director' }, },
+  { key: 'mid-senior-designer', name: 'Abrar Rafif', artboard: 2, group: 'design',
+    role: { en: 'Lead Architec // Principal', id: 'Lead Architec // Principal' } },
+  { key: 'project-designer', name: 'Andika Raafi', artboard: 1, group: 'design',
+    role: { en: 'Architec', id: 'Architec' } },
+  { key: 'larkscapes-lead', name: 'Rayhan Maulana', artboard: 7, group: 'practices',
+    role: { en: 'Lead Landscape Architec // Principal', id: 'Lead Landscape Architec // Principal' } },
+  { key: 'larkworks-lead', name: 'Nascar Alif', artboard: 8, group: 'practices',
+    role: { en: 'Lead Workshop', id: 'Lead Workshop' } },
+];
+
+/** Who a portrait is, for alt text and captions: the name when known,
+ *  otherwise the role. */
+const who = (member: TeamMember): Localized<string> =>
+  member.name
+    ? { en: `${member.name}, ${member.role.en}`, id: `${member.name}, ${member.role.id}` }
+    : { en: `Portrait — ${member.role.en}`, id: `Potret — ${member.role.id}` };
+
+export const team = {
+  title: { en: 'Who We Are', id: 'Siapa Kami' },
+  intro: {
+    en: 'Seven people across leadership, design, landscape, craft and the running of the studio.',
+    id: 'Tujuh orang di balik kepemimpinan, desain, lanskap, kriya, dan jalannya studio.',
+  },
+  /* The dedicated page's closing line. */
+  closing: {
+    en: 'One studio, one drawing set — architecture, interiors, landscape and craft, under one roof in Bogor.',
+    id: 'Satu studio, satu set gambar — arsitektur, interior, lanskap, dan kriya, di bawah satu atap di Bogor.',
+  },
+  groups: {
+    leadership: { en: 'Leadership', id: 'Pimpinan' },
+    design: { en: 'Design', id: 'Desain' },
+    practices: { en: 'Practices', id: 'Bidang Khusus' },
+  } satisfies Record<TeamGroup, Localized<string>>,
+  members: MEMBERS.map((member) => ({
+    ...member,
+    mono: portrait(member.artboard, true, who(member)),
+    colour: portrait(member.artboard, false, who(member)),
+  })),
 } as const;

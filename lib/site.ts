@@ -37,6 +37,17 @@ export const brandFace = localFont({
   adjustFontFallback: 'Arial',
 });
 
+/*
+ * THE THEME, decided before first paint — the same pattern as the intro
+ * (INTRO_SCRIPT in lib/motion.tsx). A stored choice wins; with none, the
+ * system preference decides. The script writes `data-theme` to <html>
+ * and the tokens in globals.css do the rest, so the first painted frame
+ * is already in the right theme and nothing flashes. `<html>` carries
+ * `suppressHydrationWarning` for the attribute.
+ */
+export const THEME_KEY = 'lark-theme';
+export const THEME_SCRIPT = `(function(){var d=document.documentElement,t=null;try{t=localStorage.getItem('${THEME_KEY}')}catch(e){}if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}d.setAttribute('data-theme',t)})();`;
+
 /* ------------------------------------------------------------------ *
  * Locale
  * ------------------------------------------------------------------ */
@@ -57,6 +68,7 @@ export const paths = {
   project: (locale: Locale, slug: string) => `/${locale}/work/${slug}`,
   approach: (locale: Locale) => `/${locale}/approach`,
   studio: (locale: Locale) => `/${locale}/studio`,
+  team: (locale: Locale) => `/${locale}/who-we-are`,
   contact: (locale: Locale) => `/${locale}/contact`,
 } as const;
 

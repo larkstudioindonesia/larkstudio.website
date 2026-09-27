@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: absolute(paths.home(locale)), priority: 1 },
     { url: absolute(paths.approach(locale)), priority: 0.8 },
     { url: absolute(paths.studio(locale)), priority: 0.8 },
+    { url: absolute(paths.team(locale)), priority: 0.8 },
     { url: absolute(paths.contact(locale)), priority: 0.8 },
     ...projects.map((project) => ({
       url: absolute(paths.project(locale, project.slug)),

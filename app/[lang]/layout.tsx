@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { Analytics } from '@vercel/analytics/next';
 import '@/app/globals.css';
 
-import { brandFace, isLocale, organisationJsonLd } from '@/lib/site';
+import { brandFace, isLocale, organisationJsonLd, THEME_SCRIPT } from '@/lib/site';
 import { INTRO_SCRIPT, MotionProvider } from '@/lib/motion';
 import { LOCALES, type Locale } from '@/content/types';
 import { site, ui } from '@/content/site';
@@ -81,6 +81,8 @@ export default async function LocaleLayout({
         {/* Decides whether the overture plays, before first paint. Must
             stay the first thing in <body>. See `INTRO_SCRIPT`. */}
         <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
+        {/* Light or dark, before first paint. See `THEME_SCRIPT`. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <script
           type="application/ld+json"
           /* Serialised from a typed object literal — no user input

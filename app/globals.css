@@ -264,6 +264,65 @@
   --animate-spine: lark-spine 2.2s cubic-bezier(0.76, 0, 0.24, 1) 0.05s both;
 }
 
+/* ==================================================================
+   THEMES
+
+   Dark is the studio's own register and the default token set above.
+   Light is the same system on warm paper: never pure white, never pure
+   black, brass deepened so it still reads as the accent on a pale ground,
+   and the footer — the one inverse surface — inverted with it, so it
+   stays the one dark plate on a light page.
+
+   `.theme-dark` pins a surface to the dark tokens whatever the theme:
+   the opening album (a book on a dark table) and the lightbox (a
+   photograph is looked at against dark). Every token is a CSS variable,
+   so a surface re-declaring them is all a theme needs.
+   ================================================================== */
+:root {
+  color-scheme: dark;
+}
+html[data-theme='light'] {
+  color-scheme: light;
+  --color-paper: #f2eee6;
+  --color-sunk: #e8e3d9;
+  --color-raised: #faf7f1;
+  --color-ink: #1c1a17;
+  --color-ink-2: #58534b;
+  --color-ink-3: #857f75;
+  --color-line: rgba(28, 26, 23, 0.12);
+  --color-line-strong: rgba(28, 26, 23, 0.26);
+  --color-brass: #9c7440;
+  --color-brass-soft: rgba(156, 116, 64, 0.22);
+  --color-print: #fcfaf6;
+  --color-print-well: #e6e1d7;
+  --color-bone: #171512;
+  --color-bone-ink: #efebe3;
+  --color-bone-ink-2: #a19b90;
+  --color-bone-line: rgba(239, 235, 227, 0.14);
+}
+.theme-dark {
+  color-scheme: dark;
+  --color-paper: #0b0b0c;
+  --color-sunk: #121214;
+  --color-raised: #1a1a1d;
+  --color-ink: #f4f2ed;
+  --color-ink-2: #9c9992;
+  --color-ink-3: #6a6761;
+  --color-line: rgba(244, 242, 237, 0.1);
+  --color-line-strong: rgba(244, 242, 237, 0.24);
+  --color-brass: #c8a06a;
+  --color-brass-soft: rgba(200, 160, 106, 0.3);
+  --color-print: #efece5;
+  --color-print-well: #dcd8cf;
+}
+
+
+/* The mark is a white asset. On light paper it is shown dark — the same
+   file inverted, not a redrawn logo. */
+html[data-theme='light'] .logo-on-paper {
+  filter: invert(1);
+}
+
 /* Non-utility tokens: referenced in CSS, never exposed as classes. */
 :root {
   /* Live document scroll progress, 0→1. Written once per frame by the

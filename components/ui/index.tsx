@@ -1108,7 +1108,8 @@ function LightboxStage({ request }: { request: LightboxRequest }) {
       role="dialog"
       aria-modal="true"
       aria-label={photo.credit[locale]}
-      className="fixed inset-0 z-95"
+      /* Always dark: a photograph is looked at against dark. */
+      className="theme-dark fixed inset-0 z-95"
       onTouchStart={(event) => {
         const touch = event.touches[0];
         swipe.current = touch ? { x: touch.clientX, y: touch.clientY } : null;

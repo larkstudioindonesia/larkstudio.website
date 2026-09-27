@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -14,13 +15,17 @@ import {
   useProgress,
   useReducedMotion,
   useActTwo,
+  setCursorLabel,
+  useMotionValueEvent,
+  useScroll,
   useSpring,
   useMedia,
   useTransform,
+  type MotionValue,
 } from '@/lib/motion';
 import type { Locale, Passage, Photograph, Project, ProjectImage } from '@/content/types';
 import { framePhotograph, projectPhotographs } from '@/content/projects';
-import { contact, directions, disciplines, home, practice, site, ui } from '@/content/site';
+import { contact, directions, disciplines, home, practice, site, team, ui } from '@/content/site';
 import { formatArea, ordinal, paths, whatsappLink } from '@/lib/site';
 import {
   Action,
@@ -39,6 +44,7 @@ import {
   SplitText,
   Stagger,
   TextLink,
+  RENDER_QUALITY,
   openLightbox,
   printAspect,
 } from '@/components/ui';
@@ -748,6 +754,565 @@ export function Process({ stages, locale }: { stages: readonly Passage[]; locale
                 <ProcessStage key={stage.id} stage={stage} index={position} locale={locale} />
               ))}
             </ul>
+          </div>
+        </Grid>
+      </Container>
+    </Section>
+  );
+}
+
+/* ================================================================== *
+ * HOME — WHO WE ARE
+ * ================================================================== */
+
+/**
+ * The seven people of the studio, as prints laid on a table.
+ *
+ * NOT A TEAM GRID. The section pins while the reader scrolls through it,
+ * and the scroll itself lays the photographs down: each print arrives on
+ * its own line — from the left, from above, from below, out from behind
+ * its neighbour, a touch large and settling — turns a degree or two as it
+ * lands, and its caption comes up only once it is still. Scroll back and
+ * the table clears in reverse. Every value is a transform or an opacity
+ * driven by one scroll progress value; nothing renders per frame.
+ *
+ * Two compositions from one data list (`team` in content/site.ts):
+ *
+ *   TABLE (1024px up)  seven prints in a staggered row, under a ruler that
+ *                      groups them — Leadership, Design, Practices — so the
+ *                      structure of the studio reads before any name does
+ *   DECK  (below)      one print at a time, centre stage and large; as the
+ *                      next arrives, the last is moved onto a pile behind
+ *                      it, turned and dimmed, until all seven are there
+ *
+ * The prints are the black-and-white set, a contact sheet; each turns to
+ * colour under the pointer, and a tap or click opens the colour original
+ * in the lightbox. Under reduced motion there is no pinning and no
+ * movement: the finished arrangement, or a plain two-column sheet on a
+ * phone.
+ */
+type TeamEntry = (typeof team.members)[number];
+type Pose = { x: number; y: number; r: number; s: number };
+
+/** Final placement on the table: left, top, rotation. */
+const TABLE_W = 14.2; // % of the table box
+const TABLE_ASPECT = 2.95;
+const TABLE_TOP = [11, 21, 8, 19, 11, 22, 9];
+const TABLE_ROT = [-2, 1.4, -0.8, 1.8, -1.4, 0.9, -1.8];
+/** Where each print comes from — seven different entrances. Offsets are %
+ *  of the print's own size. */
+const TABLE_FROM: readonly Pose[] = [
+  { x: -170, y: 18, r: -9, s: 1.02 }, // from the left
+  { x: 10, y: -150, r: 7, s: 1 }, // from above
+  { x: -8, y: 160, r: -6, s: 1 }, // from below
+  { x: -92, y: 4, r: 3, s: 0.94 }, // out from behind its neighbour
+  { x: 160, y: -12, r: 8, s: 1.02 }, // from the right
+  { x: 0, y: -30, r: -5, s: 1.14 }, // large, settling down
+  { x: 90, y: 150, r: 10, s: 1 }, // from below right
+];
+const tableLeft = (i: number) => 3 + i * 13.45;
+/** Print height as % of the table box, from the 4:5 photograph's print. */
+const TABLE_H = (TABLE_W * TABLE_ASPECT) / 0.81;
+const TABLE_GROUPS: readonly { group: 'leadership' | 'design' | 'practices'; from: number; to: number }[] = [
+  { group: 'leadership', from: 0, to: 2 },
+  { group: 'design', from: 3, to: 4 },
+  { group: 'practices', from: 5, to: 6 },
+];
+
+/** Scroll windows: each print's arrival, as fractions of the pinned run. */
+const tableWindow = (i: number) => [0.05 + i * 0.105, 0.05 + i * 0.105 + 0.2] as const;
+const deckAt = (i: number) => 0.03 + i * 0.135;
+const DECK_MOVE = 0.085;
+/** Where each print lies once it has been moved onto the pile. */
+const DECK_PILE: readonly Pose[] = [
+  { x: -7, y: -5, r: -5, s: 0.92 },
+  { x: 6, y: -6, r: 4, s: 0.92 },
+  { x: -4, y: -8, r: -3, s: 0.92 },
+  { x: 8, y: -4, r: 6, s: 0.92 },
+  { x: -8, y: -7, r: -6, s: 0.92 },
+  { x: 5, y: -9, r: 3, s: 0.92 },
+  { x: 0, y: 0, r: -1, s: 1 },
+];
+const DECK_REST = [-1.2, 1, -0.8, 1.4, -1, 0.8, -1];
+
+function TeamPrint({
+  member,
+  index,
+  locale,
+  load,
+  sizes,
+  priority = false,
+  onOpen,
+}: {
+  member: TeamEntry;
+  index: number;
+  locale: Locale;
+  load: boolean;
+  sizes: string;
+  /** The page's first, largest image: preloaded. */
+  priority?: boolean;
+  onOpen: (origin: HTMLElement, index: number) => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-print=""
+      data-rotate={0}
+      aria-label={`${ui.enlarge[locale]}: ${member.colour.alt[locale]}`}
+      onClick={(event) => {
+        onOpen(event.currentTarget, index);
+      }}
+      onPointerEnter={() => {
+        setCursorLabel(ui.enlarge[locale]);
+      }}
+      onPointerLeave={() => {
+        setCursorLabel(null);
+      }}
+      className="group/print block w-full cursor-zoom-in [container-type:inline-size]"
+    >
+      {/* Lifts a little under the pointer and the shadow deepens with it —
+          transform and a static shadow swap, nothing animated per frame. */}
+      <span className="block bg-print p-[3.2cqw] shadow-[0_1px_1px_rgba(0,0,0,0.28),0_18px_36px_-22px_rgba(0,0,0,0.85)] transition-[transform,box-shadow] duration-500 ease-expo group-hover/print:-translate-y-[6px] group-hover/print:shadow-[0_2px_3px_rgba(0,0,0,0.3),0_30px_50px_-24px_rgba(0,0,0,0.9)] group-focus-visible/print:-translate-y-[6px]">
+        <span className="relative block aspect-[1080/1350] w-full overflow-hidden bg-print-well">
+          {load && (
+            <>
+              <Image
+                src={member.mono.src}
+                alt={member.mono.alt[locale]}
+                fill
+                sizes={sizes}
+                quality={RENDER_QUALITY}
+                priority={priority}
+                loading="eager"
+                className="object-contain"
+              />
+              {/* The colour original, under the black-and-white print —
+                  revealed on hover, fetched only when it can be seen. */}
+              <Image
+                src={member.colour.src}
+                alt=""
+                aria-hidden
+                fill
+                sizes={sizes}
+                quality={RENDER_QUALITY}
+                loading="lazy"
+                className="object-contain opacity-0 transition-opacity duration-700 ease-expo group-hover/print:opacity-100 group-focus-visible/print:opacity-100"
+              />
+            </>
+          )}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function TeamCaption({ member, locale, large = false }: { member: TeamEntry; locale: Locale; large?: boolean }) {
+  return (
+    <>
+      {member.name && (
+        <p className={`font-display text-ink ${large ? 'text-title' : 'text-[max(0.95rem,1.25cqw)] leading-[1.15]'}`}>
+          {member.name}
+        </p>
+      )}
+      <p
+        className={
+          member.name
+            ? `label mt-1 text-ink-2 ${large ? '' : 'text-[max(0.6875rem,0.78cqw)] leading-[1.35]'}`
+            : `font-display text-ink ${large ? 'text-title' : 'text-[max(0.9rem,1.12cqw)] leading-[1.15]'}`
+        }
+      >
+        {member.role[locale]}
+      </p>
+      {member.note && (
+        <p className={`mt-1 text-ink-3 ${large ? 'font-text text-caption' : 'text-[max(0.75rem,0.82cqw)] leading-[1.3]'}`}>
+          {member.note[locale]}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** One print on the table, posed by scroll progress. */
+function TablePrint({
+  member,
+  index,
+  locale,
+  progress,
+  load,
+  onOpen,
+}: {
+  member: TeamEntry;
+  index: number;
+  locale: Locale;
+  progress: MotionValue<number>;
+  load: boolean;
+  onOpen: (origin: HTMLElement, index: number) => void;
+}) {
+  const [a, b] = tableWindow(index);
+  const from = TABLE_FROM[index] ?? { x: 0, y: 100, r: 0, s: 1 };
+  const rest = TABLE_ROT[index] ?? 0;
+  const x = useTransform(progress, [a, b], [`${String(from.x)}%`, '0%']);
+  const y = useTransform(progress, [a, b], [`${String(from.y)}%`, '0%']);
+  const rotate = useTransform(progress, [a, b], [from.r, rest]);
+  const scale = useTransform(progress, [a, b], [from.s, 1]);
+  const opacity = useTransform(progress, [a, a + 0.05], [0, 1]);
+  const caption = useTransform(progress, [b - 0.03, b + 0.02], [0, 1]);
+  const top = TABLE_TOP[index] ?? 10;
+  return (
+    <>
+      <Motion.div
+        className="absolute"
+        style={{ left: `${String(tableLeft(index))}%`, top: `${String(top)}%`, width: `${String(TABLE_W)}%`, zIndex: index + 1, x, y, rotate, scale, opacity }}
+      >
+        <TeamPrint member={member} index={index} locale={locale} load={load} sizes="(min-width: 1024px) 14vw, 1px" onOpen={onOpen} />
+      </Motion.div>
+      <Motion.div
+        className="absolute"
+        /* Inset from both sides so it clears the neighbouring prints,
+           which overlap this one's edges by a fraction of a percent. */
+        style={{ left: `${String(tableLeft(index) + 1.4)}%`, top: `${String(top + TABLE_H + 2.5)}%`, width: `${String(TABLE_W - 2.6)}%`, opacity: caption }}
+      >
+        <TeamCaption member={member} locale={locale} />
+      </Motion.div>
+    </>
+  );
+}
+
+/** One print in the deck: arrives centre stage, then joins the pile. */
+function DeckPrint({
+  member,
+  index,
+  locale,
+  progress,
+  load,
+  onOpen,
+}: {
+  member: TeamEntry;
+  index: number;
+  locale: Locale;
+  progress: MotionValue<number>;
+  load: boolean;
+  onOpen: (origin: HTMLElement, index: number) => void;
+}) {
+  const at = deckAt(index);
+  const next = index < 6 ? deckAt(index + 1) : 2;
+  const pile = DECK_PILE[index] ?? { x: 0, y: 0, r: 0, s: 1 };
+  const rest = DECK_REST[index] ?? 0;
+  const enter = index % 2 === 0 ? -1 : 1;
+  const stops = [at, at + DECK_MOVE, next, next + DECK_MOVE];
+  /* Waiting prints start well below the stage and invisible, so nothing
+     queues in view before its turn. */
+  const x = useTransform(progress, stops, [`${String(enter * 18)}%`, '0%', '0%', `${String(pile.x)}%`]);
+  const y = useTransform(progress, stops, ['240%', '0%', '0%', `${String(pile.y)}%`]);
+  const opacity = useTransform(progress, [at - 0.005, at + 0.03], [0, 1]);
+  const rotate = useTransform(progress, stops, [enter * 9, rest, rest, pile.r]);
+  const scale = useTransform(progress, stops, [1.04, 1, 1, pile.s]);
+  const dim = useTransform(progress, [next, next + DECK_MOVE], [0, 0.4]);
+  return (
+    <Motion.div className="absolute inset-0" style={{ zIndex: index + 1, x, y, rotate, scale, opacity }}>
+      <TeamPrint member={member} index={index} locale={locale} load={load} sizes="(max-width: 1023px) 70vw, 1px" onOpen={onOpen} />
+      <Motion.span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-paper" style={{ opacity: dim }} />
+    </Motion.div>
+  );
+}
+
+export function Team({ locale }: { locale: Locale }) {
+  const wrapper = useRef<HTMLElement>(null);
+  /* Read after mount: the server cannot know the preference, and a first
+     client render that already did would not match its HTML. */
+  const prefersReduced = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const reduced = mounted && prefersReduced === true;
+  const members = team.members;
+  const { scrollYProgress: progress } = useScroll({ target: wrapper, offset: ['start start', 'end end'] });
+  /* The deck's caption follows the print in front. Only a change of
+     person renders. */
+  const [current, setCurrent] = useState(0);
+  useMotionValueEvent(progress, 'change', (value) => {
+    let index = 0;
+    for (let i = 0; i < members.length; i += 1) if (value >= deckAt(i) + DECK_MOVE * 0.5) index = i;
+    setCurrent((was) => (was === index ? was : index));
+  });
+  /* Images are mounted once the section is within reach: the prints start
+     off-stage inside a clipped viewport, where lazy loading would never
+     fire. */
+  const { ref: near, inView: load } = useInView<HTMLDivElement>({ rootMargin: '1200px 0px 1200px 0px' });
+  const colours = members.map((member) => member.colour);
+  const open = (origin: HTMLElement, index: number) => {
+    openLightbox({ photos: colours, index, origin, locale });
+  };
+  const person = members[current] ?? members[0];
+  const personGroup = person?.group ?? 'leadership';
+
+  const heading = (
+    <div className="flex items-end justify-between gap-6">
+      <div>
+        <Eyebrow>{team.title[locale]}</Eyebrow>
+        <p className="mt-4 max-w-[34ch] font-display text-title text-ink desktop:mt-5">{team.intro[locale]}</p>
+        <Link
+          href={paths.team(locale)}
+          className="mt-3 inline-flex min-h-[40px] items-center gap-3 font-text text-spec text-ink-2 tablet:hidden"
+        >
+          {ui.meetStudio[locale]}
+          <Arrow />
+        </Link>
+      </div>
+      {/* The way to the full page — small, beside the heading. */}
+      <Link
+        href={paths.team(locale)}
+        className="group/meet hidden shrink-0 items-center gap-3 font-text text-spec text-ink-2 transition-colors duration-300 ease-expo hover:text-ink tablet:inline-flex"
+      >
+        <span className="sweep">{ui.meetStudio[locale]}</span>
+        <Arrow className="transition-transform duration-500 ease-expo group-hover/meet:translate-x-1" />
+      </Link>
+    </div>
+  );
+
+  if (reduced) {
+    /* The same element, carrying the same ref, as the pinned version —
+       the scroll tracking above always has its target. */
+    return (
+      <section ref={wrapper} aria-label={team.title[locale]} className="relative py-9 tablet:py-10 desktop:py-11">
+        <Container>
+          {heading}
+          <ul className="mt-9 grid grid-cols-2 gap-x-5 gap-y-8 tablet:grid-cols-4 desktop:grid-cols-7">
+            {members.map((member, index) => (
+              <li key={member.key}>
+                <TeamPrint member={member} index={index} locale={locale} load sizes="(min-width: 1024px) 14vw, 45vw" onOpen={open} />
+                <div className="mt-3 [container-type:inline-size]">
+                  <TeamCaption member={member} locale={locale} large={false} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Container>
+      </section>
+    );
+  }
+
+  return (
+    <section
+      ref={wrapper}
+      aria-label={team.title[locale]}
+      className="relative h-[calc(100svh+7*42svh)] desktop:h-[calc(100svh+165svh)]"
+    >
+      <div ref={near} className="sticky top-0 flex h-[100svh] flex-col overflow-hidden">
+        <div className="shrink-0 pt-[4.5rem] desktop:pt-[6.5rem]">
+          <Container>{heading}</Container>
+        </div>
+
+        {/* THE TABLE — desktop. */}
+        <div className="relative hidden min-h-0 flex-1 items-center justify-center px-[4vw] pb-6 [container-type:size] desktop:flex">
+          <div
+            className="relative [container-type:inline-size]"
+            style={{ width: `min(100cqw, ${String(TABLE_ASPECT * 100)}cqh)`, aspectRatio: String(TABLE_ASPECT) }}
+          >
+            {/* The ruler: which prints are which part of the studio. */}
+            {TABLE_GROUPS.map(({ group, from, to }) => (
+              <div
+                key={group}
+                className="absolute top-0 border-t border-line-strong pt-2"
+                style={{ left: `${String(tableLeft(from))}%`, width: `${String(tableLeft(to) + TABLE_W - tableLeft(from) - 1)}%` }}
+              >
+                <p className="label text-brass">{team.groups[group][locale]}</p>
+              </div>
+            ))}
+            {members.map((member, index) => (
+              <TablePrint key={member.key} member={member} index={index} locale={locale} progress={progress} load={load} onOpen={open} />
+            ))}
+          </div>
+        </div>
+
+        {/* THE DECK — below 1024px. */}
+        <div className="flex min-h-0 flex-1 flex-col desktop:hidden">
+          <div className="relative flex min-h-0 flex-1 items-center justify-center [container-type:size]">
+            <div className="relative" style={{ width: 'min(64cqw, calc(86cqh * 0.81))', aspectRatio: '0.81' }}>
+              {members.map((member, index) => (
+                <DeckPrint key={member.key} member={member} index={index} locale={locale} progress={progress} load={load} onOpen={open} />
+              ))}
+            </div>
+          </div>
+          <Container className="relative z-20 shrink-0 bg-paper pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
+            <div className="flex items-center justify-between border-t border-line pt-3">
+              <p className="label text-brass">{team.groups[personGroup][locale]}</p>
+              <p className="figures label text-ink-3">
+                <span className="text-ink">{String(current + 1).padStart(2, '0')}</span>
+                <span aria-hidden="true"> / </span>
+                {String(members.length).padStart(2, '0')}
+              </p>
+            </div>
+            {/* Every caption in one grid cell, only the current visible:
+                the block is always as tall as the longest, so the stage
+                never resizes as the person changes. */}
+            <div className="mt-3 grid">
+              {members.map((member, index) => (
+                <div
+                  key={member.key}
+                  aria-hidden={index !== current}
+                  className={`col-start-1 row-start-1 transition-opacity duration-500 ${index === current ? 'opacity-100' : 'invisible opacity-0'}`}
+                >
+                  <TeamCaption member={member} locale={locale} large />
+                </div>
+              ))}
+            </div>
+          </Container>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================== *
+ * WHO WE ARE — THE PAGE
+ * ================================================================== */
+
+/**
+ * The studio's seven people as an archive of prints: the homepage's team
+ * section opened out onto a page of its own.
+ *
+ * A CONTACT SHEET, NOT A DIRECTORY. Four columns on desktop, three on a
+ * tablet, two on any phone, set tight. Within that structure every
+ * print is its own: a column that sits lower than its neighbour, a turn
+ * of a degree or so, a caption set to the print's width. The same
+ * furniture as everywhere else on the site — a whole photograph in a
+ * warm border, a brass group label, the role.
+ *
+ * THE SCROLL LAYS THEM DOWN, row by row. Each print is tied to its own
+ * pass into the viewport: it comes up from below with a different drift
+ * and turn per column, a touch large, and settles square-ish by the time
+ * it is well on screen — then holds. Nothing moves after that, nothing
+ * pins; the page scrolls on. Transform and opacity only, from one scroll
+ * value per print.
+ */
+const ARCHIVE_ROT = [-1.2, 0.9, -0.5, 1.1, -0.9, 0.6, -1.1];
+/** Arrival per print: horizontal drift (%), extra turn (deg). Varied so
+ *  no two neighbours arrive the same way. */
+const ARCHIVE_FROM = [
+  { x: -6, r: -4 },
+  { x: 5, r: 3 },
+  { x: -3, r: 4 },
+  { x: 7, r: -3 },
+  { x: -5, r: 3 },
+  { x: 4, r: -4 },
+  { x: -5, r: 3 },
+];
+/* Column offsets per breakpoint — small, so the grid still reads as one
+   sheet. Literal classes, so Tailwind sees them. Pixels, not the spacing
+   scale: on this site `mt-10` is 8rem. */
+const ARCHIVE_OFFSET = [
+  '',
+  'max-tablet:mt-[14px] tablet:max-desktop:mt-[18px] desktop:mt-[22px]',
+  'tablet:max-desktop:mt-[8px] desktop:mt-[8px]',
+  'max-tablet:mt-[14px] desktop:mt-[26px]',
+  'tablet:max-desktop:mt-[18px] desktop:mt-[4px]',
+  'max-tablet:mt-[14px] tablet:max-desktop:mt-[8px] desktop:mt-[18px]',
+  'desktop:mt-[10px]',
+];
+
+function ArchivePrint({
+  member,
+  index,
+  locale,
+  animate,
+  onOpen,
+}: {
+  member: TeamEntry;
+  index: number;
+  locale: Locale;
+  animate: boolean;
+  onOpen: (origin: HTMLElement, index: number) => void;
+}) {
+  const ref = useRef<HTMLLIElement>(null);
+  /* Arrives over its first 30% of screen height, so a row is settled
+     while the next is still coming — the sheet assembles without the
+     scroll length growing. */
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 100%', 'start 70%'] });
+  const from = ARCHIVE_FROM[index] ?? { x: 0, r: 0 };
+  const rest = ARCHIVE_ROT[index] ?? 0;
+  const y = useTransform(scrollYProgress, [0, 1], ['12%', '0%']);
+  const x = useTransform(scrollYProgress, [0, 1], [`${String(from.x)}%`, '0%']);
+  const rotate = useTransform(scrollYProgress, [0, 1], [rest + from.r, rest]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1.03, 1]);
+  const opacity = useTransform(scrollYProgress, [0, 0.35], [0, 1]);
+  const caption = useTransform(scrollYProgress, [0.75, 1], [0, 1]);
+  return (
+    <li ref={ref} className={ARCHIVE_OFFSET[index] ?? ''}>
+      <Motion.div style={animate ? { x, y, rotate, scale, opacity } : { rotate: rest }}>
+        {/* A print already on screen when the page opens has finished its
+            scroll arrival before anyone could see it; this layer lays it
+            down once on load instead, in order, after the title. Prints
+            further down finish this unseen and arrive by scroll. Under
+            reduced motion the engine resolves it instantly (see
+            MotionGlobalConfig in lib/motion.tsx). */}
+        <Motion.div
+          initial={{ opacity: 0, y: 18, rotate: from.r * 0.6 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ duration: 1.1, ease: EASE.expo, delay: 0.45 + index * 0.08 }}
+        >
+        <TeamPrint
+          member={member}
+          index={index}
+          locale={locale}
+          load
+          sizes="(min-width: 1440px) 320px, (min-width: 1024px) 22vw, (min-width: 640px) 30vw, 46vw"
+          priority={index === 0}
+          onOpen={onOpen}
+        />
+        </Motion.div>
+      </Motion.div>
+      <Motion.div className="mt-3 px-1 [container-type:inline-size]" style={animate ? { opacity: caption } : {}}>
+        <p className="label text-brass">{team.groups[member.group][locale]}</p>
+        <div className="mt-1">
+          <TeamCaption member={member} locale={locale} large />
+        </div>
+      </Motion.div>
+    </li>
+  );
+}
+
+export function TeamArchive({ locale }: { locale: Locale }) {
+  const prefersReduced = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const animate = mounted && prefersReduced !== true;
+  const members = team.members;
+  const colours = members.map((member) => member.colour);
+  const open = (origin: HTMLElement, index: number) => {
+    openLightbox({ photos: colours, index, origin, locale });
+  };
+  return (
+    <Section rhythm="default" label={ui.navTeam[locale]}>
+      <Container>
+        {/* One compact sheet: two columns on any phone, three on a
+            tablet, four from 1024px, held to a width that keeps four
+            prints large without spreading the sheet across a wide screen.
+            Gaps in pixels — see ARCHIVE_OFFSET. */}
+        <ul className="mx-auto grid max-w-[1320px] grid-cols-2 gap-x-[14px] gap-y-[28px] tablet:grid-cols-3 tablet:gap-x-[22px] tablet:gap-y-[36px] desktop:grid-cols-4 desktop:gap-x-[28px] desktop:gap-y-[40px]">
+          {members.map((member, index) => (
+            <ArchivePrint key={member.key} member={member} index={index} locale={locale} animate={animate} onOpen={open} />
+          ))}
+        </ul>
+      </Container>
+    </Section>
+  );
+}
+
+/** The page's one closing line, on a hairline — then the site's own
+ *  call to action takes over. */
+export function TeamClosing({ locale }: { locale: Locale }) {
+  return (
+    <Section rhythm="tight">
+      <Container>
+        <Grid>
+          <div className="col-span-4 border-t border-line pt-6 tablet:col-span-8 desktop:col-span-7 desktop:col-start-6">
+            <Reveal>
+              <p className="max-w-[40ch] font-display text-statement text-ink">{team.closing[locale]}</p>
+            </Reveal>
           </div>
         </Grid>
       </Container>
