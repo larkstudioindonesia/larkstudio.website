@@ -863,7 +863,7 @@ const REGISTRY: readonly Project[] = [
     slug: 'peeps-cafe',
     name: { en: 'Peeps Cafe', id: 'Peeps Cafe' },
     type: { en: 'Cafe', id: 'Kafe' },
-    location: { en: 'Depok', id: 'Depok' },
+    location: { en: 'Jakarta Pusat', id: 'Jakarta Pusat' },
     year: 2026,
     area: 228.9,
     outcome: {
