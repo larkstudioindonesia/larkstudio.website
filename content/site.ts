@@ -108,12 +108,12 @@ export const ui = {
 
 export const home = {
   metaTitle: {
-    en: 'Lark Studio | Architecture & Interior Design',
-    id: 'Lark Studio | Arsitektur & Interior',
+    en: 'Lark Studio | Architecture, Interior & Landscape',
+    id: 'Lark Studio | Arsitektur, Interior & Lanskap',
   },
   metaDescription: {
-    en: 'Architecture and interior design studio creating aesthetically pleasing functional spaces for residential and commercial projects across Indonesia.',
-    id: 'Studio arsitektur dan interior yang merancang ruang estetik dan fungsional untuk proyek hunian dan komersial di Indonesia.',
+    en: 'Lark Studio is a Bogor based architecture, interior and landscape design studio creating thoughtful spaces for residential and commercial projects across Indonesia.',
+    id: 'Lark Studio adalah studio arsitektur, interior, dan lanskap berbasis di Bogor yang merancang ruang hunian dan komersial fungsional di seluruh Indonesia.',
   },
 
   /**
